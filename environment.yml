@@ -1,0 +1,13 @@
+name: pytorch-dl-practice
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - matplotlib
+  - pip:
+      - torch==2.12.1
+      - torchvision==0.27.1
