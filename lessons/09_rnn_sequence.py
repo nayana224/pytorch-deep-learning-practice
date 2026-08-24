@@ -90,6 +90,7 @@ def main() -> None:
     visualize_hidden_states(model, fixed_x, fixed_y, epoch=0)
 
     for epoch in range(100):
+        model.train()
         optimizer.zero_grad()
         logits = model(x)
         loss = criterion(logits, y)
@@ -123,9 +124,14 @@ def visualize_hidden_states(
     epoch: int,
 ) -> None:
     """각 time step에서 hidden state가 어떻게 변하는지 heatmap으로 저장한다."""
+    was_training = model.training
     model.eval()
+
     with torch.no_grad():
         _, hidden_sequence = model(x, return_sequence=True)
+
+    if was_training:
+        model.train()
 
     hidden_sequence = hidden_sequence.cpu()
     y = y.cpu()
