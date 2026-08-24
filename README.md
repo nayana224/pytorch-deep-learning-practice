@@ -7,6 +7,7 @@
 - 수식과 PyTorch 코드의 대응 관계를 이해합니다.
 - `forward -> loss -> backward -> optimizer.step()` 학습 흐름을 직접 확인합니다.
 - MLP, CNN, optimizer, initialization, regularization, RNN을 작은 실험으로 순서대로 익힙니다.
+- 터미널 숫자만 보는 것이 아니라 Matplotlib으로 학습 과정과 내부 표현을 시각적으로 확인합니다.
 - 연구실 PC와 개인 노트북에서 같은 Conda 환경을 쉽게 재현합니다.
 
 ## 권장 환경
@@ -65,26 +66,54 @@ python scripts/00_check_environment.py
 
 ## 학습 순서
 
-| 순서 | 파일 | 핵심 개념 |
-|---:|---|---|
-| 0 | `scripts/00_check_environment.py` | Python, PyTorch, CUDA 환경 확인 |
-| 1 | `lessons/01_tensor_autograd.py` | Tensor, shape, autograd |
-| 2 | `lessons/02_linear_regression_manual.py` | gradient descent 수동 구현 |
-| 3 | `lessons/03_linear_regression_torch.py` | `nn.Module`, loss, optimizer |
-| 4 | `lessons/04_mnist_mlp.py` | DataLoader, MLP, 분류 학습 loop |
-| 5 | `lessons/05_mnist_cnn.py` | Conv2d, ReLU, MaxPool2d |
-| 6 | `lessons/06_optimizer_compare.py` | SGD, Momentum, Adam 비교 |
-| 7 | `lessons/07_initialization_compare.py` | Xavier, He initialization |
-| 8 | `lessons/08_regularization_compare.py` | Dropout, L2 weight decay |
-| 9 | `lessons/09_rnn_sequence.py` | 순서가 있는 sample과 RNN |
+| 순서 | 파일 | 핵심 개념 | 대표 시각화 |
+|---:|---|---|---|
+| 0 | `scripts/00_check_environment.py` | Python, PyTorch, CUDA 환경 확인 | CUDA tensor 출력 |
+| 1 | `lessons/01_tensor_autograd.py` | Tensor, shape, autograd | 수치 gradient 비교 |
+| 2 | `lessons/02_linear_regression_manual.py` | gradient descent 수동 구현 | 회귀선 변화, loss, `w/b` 수렴 |
+| 3 | `lessons/03_linear_regression_torch.py` | `nn.Module`, loss, optimizer | PyTorch 회귀선, parameter 수렴 |
+| 4 | `lessons/04_mnist_mlp.py` | DataLoader, MLP, 분류 학습 loop | loss/accuracy, 첫 layer weight, prediction |
+| 5 | `lessons/05_mnist_cnn.py` | Conv2d, ReLU, MaxPool2d | epoch별 feature map, learned filter, loss/accuracy |
+| 6 | `lessons/06_optimizer_compare.py` | SGD, Momentum, Adam 비교 | optimizer별 loss curve |
+| 7 | `lessons/07_initialization_compare.py` | Xavier, He initialization | layer별 activation 표준편차 |
+| 8 | `lessons/08_regularization_compare.py` | Dropout, L2 weight decay | dropout mask, activation 분포 |
+| 9 | `lessons/09_rnn_sequence.py` | 순서가 있는 sample과 RNN | sequence, hidden-state heatmap, loss/accuracy |
 
-## 실습 원칙
+## Visualization-first 실습 원칙
 
 1. 코드를 실행하기 전에 입력/출력 tensor shape을 먼저 예상합니다.
 2. `forward -> loss -> backward -> optimizer.step()` 흐름을 매 실습에서 확인합니다.
 3. 한 번에 하나의 조건만 바꾸어 결과를 비교합니다.
 4. GPU 사용 여부와 tensor device를 명시적으로 확인합니다.
-5. 실험 결과는 `outputs/`에 저장합니다.
+5. 가능한 실습은 학습 전/중/후 상태를 Matplotlib으로 저장합니다.
+6. CNN에서는 동일한 입력 이미지를 고정하고 epoch별 feature map 변화를 비교합니다.
+7. 단순 accuracy만 보지 않고 weight, activation, hidden state처럼 내부 표현도 관찰합니다.
+8. 실험 결과는 lesson별 `outputs/` 하위 디렉터리에 저장합니다.
+
+## 시각화 결과 확인
+
+예를 들어 CNN 실습을 실행하면:
+
+```bash
+python lessons/05_mnist_cnn.py
+```
+
+다음과 같은 파일이 생성됩니다.
+
+```text
+outputs/05_mnist_cnn/
+├── conv1_feature_maps_epoch_00.png
+├── conv1_feature_maps_epoch_01.png
+├── ...
+├── conv2_feature_maps_epoch_00.png
+├── conv2_feature_maps_epoch_01.png
+├── ...
+├── conv1_filters_epoch_00.png
+├── conv1_filters_epoch_01.png
+└── training_curves.png
+```
+
+여기서 가장 중요한 비교는 **같은 MNIST 입력 한 장에 대해 epoch 0, 1, 2, ...의 feature map이 어떻게 달라지는지**입니다. 초기에는 거의 임의의 반응을 보이지만 학습이 진행되면서 서로 다른 channel이 획, 경계, 국소 패턴 등에 선택적으로 반응하는 모습을 관찰할 수 있습니다. 다만 각 channel에 사람이 정한 의미가 자동으로 부여되는 것은 아니므로, feature map은 정성적 해석 도구로 사용합니다.
 
 ## 데이터
 
