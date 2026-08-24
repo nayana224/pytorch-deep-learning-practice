@@ -8,109 +8,154 @@ from torch import nn
 OUTPUT_DIR = Path("outputs/08_regularization_compare")
 
 
-class SmallClassifier(nn.Module):
-    """Dropout 적용 여부를 쉽게 비교할 수 있는 작은 분류기."""
+class Classifier(nn.Module):
+    """작은 데이터에서 regularization 효과를 비교하는 MLP."""
 
-    def __init__(self, dropout_probability: float) -> None:
+    def __init__(self, dropout_probability: float = 0.0) -> None:
         super().__init__()
-        self.fc1 = nn.Linear(20, 64)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=dropout_probability)
-        self.fc2 = nn.Linear(64, 2)
-
-    def hidden_activation(self, x: torch.Tensor) -> torch.Tensor:
-        """Dropout 직전 hidden activation을 반환한다."""
-        return self.relu(self.fc1(x))
+        self.network = nn.Sequential(
+            nn.Linear(2, 128),
+            nn.ReLU(),
+            nn.Dropout(dropout_probability),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Dropout(dropout_probability),
+            nn.Linear(128, 2),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        hidden = self.hidden_activation(x)
-        hidden = self.dropout(hidden)
-        return self.fc2(hidden)
+        return self.network(x)
+
+
+def make_dataset(samples: int, seed: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """두 개의 noisy ring class를 만들어 과적합 비교에 사용한다."""
+    generator = torch.Generator().manual_seed(seed)
+    labels = torch.randint(0, 2, (samples,), generator=generator)
+    angles = torch.rand(samples, generator=generator) * 2.0 * torch.pi
+    radius = 1.0 + labels.float() * 0.8
+    radius += torch.randn(samples, generator=generator) * 0.22
+
+    x = torch.stack(
+        [radius * torch.cos(angles), radius * torch.sin(angles)],
+        dim=1,
+    )
+    return x, labels
+
+
+def train(
+    dropout_probability: float,
+    weight_decay: float,
+) -> tuple[Classifier, list[float], list[float]]:
+    torch.manual_seed(0)
+    train_x, train_y = make_dataset(samples=80, seed=0)
+    test_x, test_y = make_dataset(samples=1000, seed=1)
+
+    model = Classifier(dropout_probability=dropout_probability)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=weight_decay)
+    criterion = nn.CrossEntropyLoss()
+    train_accuracy_history: list[float] = []
+    test_accuracy_history: list[float] = []
+
+    for _ in range(400):
+        model.train()
+        optimizer.zero_grad()
+        loss = criterion(model(train_x), train_y)
+        loss.backward()
+        optimizer.step()
+
+        model.eval()
+        with torch.no_grad():
+            train_accuracy = (model(train_x).argmax(dim=1) == train_y).float().mean().item()
+            test_accuracy = (model(test_x).argmax(dim=1) == test_y).float().mean().item()
+        train_accuracy_history.append(train_accuracy)
+        test_accuracy_history.append(test_accuracy)
+
+    return model, train_accuracy_history, test_accuracy_history
 
 
 def main() -> None:
-    torch.manual_seed(0)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    x = torch.randn(128, 20)
 
-    model = SmallClassifier(dropout_probability=0.5)
-    hidden = model.hidden_activation(x).detach()
+    experiments = {
+        "No regularization": (0.0, 0.0),
+        "L2 weight decay": (0.0, 1e-3),
+        "Dropout": (0.5, 0.0),
+    }
 
-    model.train()
-    dropped_1 = model.dropout(hidden).detach()
-    dropped_2 = model.dropout(hidden).detach()
-    train_output_1 = model.fc2(dropped_1)
-    train_output_2 = model.fc2(dropped_2)
+    results: dict[str, tuple[Classifier, list[float], list[float]]] = {}
+    for name, (dropout, weight_decay) in experiments.items():
+        result = train(dropout, weight_decay)
+        results[name] = result
+        _, train_history, test_history = result
+        print(
+            f"{name:17s} "
+            f"train_acc={train_history[-1]:.3f} "
+            f"test_acc={test_history[-1]:.3f} "
+            f"gap={train_history[-1] - test_history[-1]:.3f}"
+        )
 
-    model.eval()
-    with torch.no_grad():
-        eval_hidden = model.dropout(hidden)
-        eval_output_1 = model.fc2(eval_hidden)
-        eval_output_2 = model(x)
-
-    train_difference = (train_output_1 - train_output_2).abs().mean().item()
-    eval_difference = (eval_output_1 - eval_output_2).abs().mean().item()
-
-    print(f"train mode difference: {train_difference:.6f}")
-    print(f"eval mode difference:  {eval_difference:.6f}")
-    print("\nDropout은 train mode에서만 확률적으로 동작한다.")
-
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=1e-3,
-        weight_decay=1e-4,
-    )
-    print(f"L2-style weight_decay: {optimizer.param_groups[0]['weight_decay']}")
-
-    plot_dropout_masks(hidden, dropped_1, dropped_2)
-    plot_activation_distributions(hidden, dropped_1)
-    print(f"시각화 저장 위치: {OUTPUT_DIR}")
-    plt.show()
+    plot_accuracy_curves(results)
+    plot_decision_boundaries(results)
+    print("train-test gap이 줄어드는지 비교하세요.")
+    print(f"saved: {OUTPUT_DIR}")
 
 
-def plot_dropout_masks(
-    hidden: torch.Tensor,
-    dropped_1: torch.Tensor,
-    dropped_2: torch.Tensor,
+def plot_accuracy_curves(
+    results: dict[str, tuple[Classifier, list[float], list[float]]],
 ) -> None:
-    """같은 hidden activation에 서로 다른 dropout mask가 적용됨을 보여준다."""
-    sample = 0
-    values = [
-        hidden[sample].numpy(),
-        dropped_1[sample].numpy(),
-        dropped_2[sample].numpy(),
-    ]
-    titles = ["Before dropout", "Dropout pass 1", "Dropout pass 2"]
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4))
 
-    figure, axes = plt.subplots(3, 1, figsize=(10, 7), sharex=True)
-    for axis, value, title in zip(axes, values, titles):
-        axis.bar(range(len(value)), value)
-        axis.set_ylabel("Activation")
-        axis.set_title(title)
+    for name, (_, train_history, test_history) in results.items():
+        axes[0].plot(train_history, label=name)
+        axes[1].plot(test_history, label=name)
 
-    axes[-1].set_xlabel("Hidden unit index")
+    axes[0].set(xlabel="Epoch", ylabel="Accuracy", title="Training accuracy", ylim=(0.0, 1.02))
+    axes[1].set(xlabel="Epoch", ylabel="Accuracy", title="Test accuracy", ylim=(0.0, 1.02))
+    axes[0].legend()
+    axes[1].legend()
     figure.tight_layout()
-    figure.savefig(OUTPUT_DIR / "dropout_masks.png", dpi=150)
+    figure.savefig(OUTPUT_DIR / "accuracy_curves.png", dpi=150)
+    plt.close(figure)
 
 
-def plot_activation_distributions(
-    hidden: torch.Tensor,
-    dropped: torch.Tensor,
+def plot_decision_boundaries(
+    results: dict[str, tuple[Classifier, list[float], list[float]]],
 ) -> None:
-    """Dropout 전후 activation 분포와 zero 비율을 비교한다."""
-    hidden_values = hidden.flatten().numpy()
-    dropped_values = dropped.flatten().numpy()
-    zero_ratio = (dropped == 0).float().mean().item()
+    train_x, train_y = make_dataset(samples=80, seed=0)
+    grid_x, grid_y = torch.meshgrid(
+        torch.linspace(-2.5, 2.5, 200),
+        torch.linspace(-2.5, 2.5, 200),
+        indexing="xy",
+    )
+    grid = torch.stack([grid_x.flatten(), grid_y.flatten()], dim=1)
 
-    plt.figure(figsize=(8, 5))
-    plt.hist(hidden_values, bins=40, alpha=0.6, label="Before dropout")
-    plt.hist(dropped_values, bins=40, alpha=0.6, label="After dropout")
-    plt.xlabel("Activation value")
-    plt.ylabel("Count")
-    plt.title(f"Activation distribution (zero ratio={zero_ratio:.3f})")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / "activation_distribution.png", dpi=150)
+    figure, axes = plt.subplots(1, 3, figsize=(15, 4))
+    for axis, (name, (model, _, _)) in zip(axes, results.items()):
+        model.eval()
+        with torch.no_grad():
+            probability = torch.softmax(model(grid), dim=1)[:, 1].reshape(200, 200)
+        axis.contourf(
+            grid_x.numpy(),
+            grid_y.numpy(),
+            probability.numpy(),
+            levels=20,
+            cmap="coolwarm",
+        )
+        axis.scatter(
+            train_x[:, 0].numpy(),
+            train_x[:, 1].numpy(),
+            c=train_y.numpy(),
+            cmap="coolwarm",
+            edgecolors="black",
+            s=25,
+        )
+        axis.set_title(name)
+        axis.set_xlabel("x1")
+        axis.set_ylabel("x2")
+
+    figure.tight_layout()
+    figure.savefig(OUTPUT_DIR / "decision_boundaries.png", dpi=150)
+    plt.close(figure)
 
 
 if __name__ == "__main__":
