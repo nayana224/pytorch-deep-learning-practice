@@ -1,33 +1,176 @@
 # PyTorch Deep Learning Practice
 
-오승상 딥러닝 강의의 핵심 개념을 **PyTorch로 직접 재현하고 Matplotlib으로 관찰**하기 위한 실습 저장소입니다.
+MNIST 하나의 데이터셋을 충분히 뜯어본 뒤, MLP와 CNN만 사용해서 딥러닝의 핵심을 비교 실험하는 저장소입니다.
 
-이 저장소의 목표는 예제 코드를 많이 모으는 것이 아니라, 강의에서 배운 수식과 개념이 실제 학습 코드에서 어떻게 동작하는지 확인하는 것입니다.
+현재 단계에서는 범위를 넓히지 않습니다. RNN, optimizer 비교, initialization, regularization, batch normalization 등의 독립 lesson은 모두 제거하고 **MNIST 입력 데이터 → MLP → CNN → 입력 구조 실험** 순서에 집중합니다.
 
-## 현재 실습 범위
+## 학습 목표
 
-현재 강의 진도에 맞춰 다음 세 영역을 집중적으로 다룹니다.
+1. 모델보다 먼저 입력 데이터의 shape, dtype, range, class 분포와 pixel 통계를 확인합니다.
+2. 같은 MNIST를 MLP와 CNN에 넣었을 때 입력을 처리하는 방식의 차이를 이해합니다.
+3. accuracy만 보지 않고 weight, convolution filter, feature map을 Matplotlib으로 관찰합니다.
+4. 한 번에 한 조건만 바꾸는 실험으로 결과의 원인을 해석합니다.
 
-- Deep Neural Network
-- Convolutional Neural Network
-- Recurrent Neural Network
+## 권장 순서
 
-강의 전체에는 이후 Attention, Auto-Encoder/VAE, GAN, NLP, GNN이 이어지며 해당 부분은 진도에 맞춰 순차적으로 추가합니다.
+| 순서 | 코드 | 질문 |
+|---:|---|---|
+| 0 | `lessons/00_inspect_mnist.py` | 모델에 실제로 무엇을 넣고 있는가? |
+| 1 | `lessons/01_mnist_mlp.py` | 28x28 이미지를 784차원 vector로 보면 무엇을 학습하는가? |
+| 2 | `lessons/02_mnist_cnn.py` | 2차원 공간 구조를 보존하면 convolution은 무엇을 학습하는가? |
+| 3 | `lessons/03_pixel_permutation_experiment.py` | pixel 값은 그대로 두고 위치만 섞으면 MLP와 CNN은 어떻게 달라지는가? |
+| 4 | `lessons/04_input_corruption_experiment.py` | noise와 occlusion에 MLP와 CNN은 얼마나 강한가? |
 
-자세한 실습 의도와 관찰 포인트는 [`docs/STUDY_GUIDE.md`](docs/STUDY_GUIDE.md)를 먼저 읽는 것을 권장합니다.
+## 0. MNIST 입력 데이터부터 뜯어보기
 
-## 환경
+먼저 학습하지 않습니다.
 
-기본 Conda 환경:
+```bash
+python lessons/00_inspect_mnist.py
+```
 
-- environment: `pytorch-dl-practice`
-- Python: 3.11
-- PyTorch: 2.12.1
-- torchvision: 0.27.1
+확인할 항목:
 
-Linux + NVIDIA 환경에서는 PyTorch wheel이 필요한 CUDA runtime을 포함하므로 일반적인 PyTorch 실습만 한다면 시스템 CUDA Toolkit(`nvcc`)을 별도로 설치할 필요가 없습니다. NVIDIA driver는 필요합니다.
+- train/test sample 개수
+- 한 image tensor의 shape `[C, H, W] = [1, 28, 28]`
+- dtype과 pixel range
+- class별 sample 수
+- 전체 training set의 pixel mean/std
+- class별 실제 sample
+- class별 평균 이미지
+- pixel intensity 분포
 
-## 새 PC에서 시작
+생성 결과:
+
+```text
+outputs/00_inspect_mnist/
+├── samples_by_class.png
+├── class_distribution.png
+├── class_mean_images.png
+└── pixel_histogram.png
+```
+
+이 단계에서 가장 중요한 질문은 **"숫자 하나가 PyTorch 안에서는 어떤 tensor로 들어오는가?"** 입니다.
+
+## 1. MLP baseline
+
+```bash
+python lessons/01_mnist_mlp.py
+```
+
+MLP는 입력 이미지를 먼저 flatten합니다.
+
+```text
+[B, 1, 28, 28]
+        ↓ Flatten
+[B, 784]
+        ↓ Linear
+[B, 128]
+        ↓ ReLU
+[B, 10]
+```
+
+관찰할 결과:
+
+```text
+outputs/01_mnist_mlp/
+├── training_curves.png
+├── first_layer_weights.png
+├── confusion_matrix.png
+└── test_predictions.png
+```
+
+`first_layer_weights.png`에서는 첫 hidden neuron의 784개 weight를 다시 28x28로 배치해서 어떤 pixel 패턴에 민감해졌는지 봅니다.
+
+## 2. CNN baseline
+
+```bash
+python lessons/02_mnist_cnn.py
+```
+
+CNN은 flatten하기 전에 2차원 공간 구조를 유지합니다.
+
+```text
+[B, 1, 28, 28]
+        ↓ Conv2d
+[B, 16, 28, 28]
+        ↓ Pool
+[B, 16, 14, 14]
+        ↓ Conv2d
+[B, 32, 14, 14]
+        ↓ Pool
+[B, 32, 7, 7]
+        ↓ Flatten + Linear
+[B, 10]
+```
+
+관찰할 결과:
+
+```text
+outputs/02_mnist_cnn/
+├── filters_before_training.png
+├── filters_after_training.png
+├── conv1_before_training.png
+├── conv1_after_training.png
+├── conv2_before_training.png
+├── conv2_after_training.png
+└── training_curves.png
+```
+
+여기서 구분할 것:
+
+- **filter weight**: 실제로 gradient descent로 학습되는 parameter
+- **feature map**: 현재 filter를 특정 입력에 적용해서 나온 activation
+
+## 3. 핵심 실험: 공간 구조를 없애면?
+
+```bash
+python lessons/03_pixel_permutation_experiment.py
+```
+
+모든 MNIST 이미지에 **동일한 고정 pixel permutation**을 적용합니다. 각 image가 가진 784개의 pixel 값 자체는 보존하지만, 위/아래/옆 pixel의 관계는 무너집니다.
+
+비교 조건:
+
+```text
+MLP + original MNIST
+MLP + permuted MNIST
+CNN + original MNIST
+CNN + permuted MNIST
+```
+
+이 실험의 핵심은 CNN의 convolution이 왜 이미지의 **local spatial structure**를 전제로 하는지를 직접 확인하는 것입니다.
+
+실험 전 가설:
+
+- MLP는 모든 pixel을 fully connected 방식으로 보기 때문에 고정 permutation에 상대적으로 덜 민감할 수 있습니다.
+- CNN은 가까운 pixel끼리의 지역적 패턴을 이용하므로 공간 구조가 무너지면 성능 저하가 더 클 것으로 예상합니다.
+
+이 문장은 실험 가설이며, 실제 수치는 실행 결과로 판단합니다.
+
+## 4. 입력 손상 실험
+
+```bash
+python lessons/04_input_corruption_experiment.py
+```
+
+clean MNIST로 학습한 MLP/CNN을 다음 test input에 그대로 평가합니다.
+
+- clean image
+- Gaussian noise가 추가된 image
+- 중앙 10x10 영역이 가려진 image
+
+이 실험에서는 **학습 조건은 그대로 두고 test input만 변경**합니다.
+
+확인할 질문:
+
+- 어느 입력 손상에서 accuracy가 가장 크게 떨어지는가?
+- MLP와 CNN의 하락 폭은 같은가?
+- 이미지의 local pattern을 이용하는 CNN의 특성이 robustness에도 도움이 되는가?
+
+## 환경 구성
+
+기존 Conda 환경을 그대로 사용합니다.
 
 ```bash
 git clone https://github.com/nayana224/pytorch-deep-learning-practice.git
@@ -37,106 +180,31 @@ conda activate pytorch-dl-practice
 python scripts/00_check_environment.py
 ```
 
-연구실 PC에서는 현재 다음 경로를 사용합니다.
+연구실 PC에서는:
 
 ```text
 ~/inpyo_ws/pytorch-deep-learning-practice
 ```
 
-코드는 절대 경로에 의존하지 않으므로 다른 노트북에서는 원하는 위치에 clone하면 됩니다.
+를 사용합니다.
 
-## 추천 복습 순서
+## 실험 원칙
 
-| 순서 | 실습 | 강의에서 확인할 핵심 | 대표 시각화 |
-|---:|---|---|---|
-| 1 | `00_xor_mlp.py` | Perceptron 한계, XOR, MLP, nonlinearity | linear vs nonlinear decision surface |
-| 2 | `01_tensor_autograd.py` | chain rule, backpropagation, gradient | manual gradient 비교 |
-| 3 | `02_linear_regression_manual.py` | cost, gradient descent, parameter update | 회귀선, loss, `w/b` 수렴 |
-| 4 | `03_linear_regression_torch.py` | `nn.Module`, `backward`, optimizer | PyTorch 학습 과정 |
-| 5 | `04_mnist_mlp.py` | MLP, logits, Softmax, Cross-Entropy | probability, confusion matrix, first-layer weights |
-| 6 | `07_initialization_compare.py` | vanishing gradient, Xavier, He, ReLU | activation std, gradient flow |
-| 7 | `06_optimizer_compare.py` | SGD, Momentum, Adagrad, RMSProp, Adam | optimizer loss curves |
-| 8 | `10_batch_normalization.py` | Batch Normalization | layer별 activation mean/std |
-| 9 | `08_regularization_compare.py` | overfitting, Dropout, L2 | train-test gap, decision boundary |
-| 10 | `05_mnist_cnn.py` | convolution, pooling, feature map | learned filters, epoch별 feature maps |
-| 11 | `09_rnn_sequence.py` | sequence, recurrent hidden state | hidden-state heatmap |
+- 입력 데이터를 먼저 확인합니다.
+- baseline을 먼저 확보합니다.
+- 한 번에 한 조건만 바꿉니다.
+- 같은 비교에서는 random seed와 학습 조건을 가능한 한 맞춥니다.
+- terminal accuracy만 보지 않고 Matplotlib 결과를 함께 봅니다.
+- 결과를 보기 전에 먼저 가설을 적고, 결과가 예상과 다르면 그 이유를 찾습니다.
 
-실행 예시:
+## 이후에 추가할 수 있는 실험
 
-```bash
-python lessons/00_xor_mlp.py
-python lessons/01_tensor_autograd.py
-python lessons/02_linear_regression_manual.py
-```
+현재 코드에 바로 넣지는 않았습니다. 위 네 단계를 충분히 본 뒤 필요하면 다음 순서로 확장하는 것이 좋습니다.
 
-## Visualization-first 원칙
+1. training data 양: 1k / 10k / 60k
+2. normalization 유무
+3. model capacity: hidden units / channel 수
+4. optimizer: SGD vs Adam
+5. regularization: Dropout / weight decay
 
-각 실습은 다음 순서로 공부합니다.
-
-1. 실행 전에 입력/output tensor shape을 예상합니다.
-2. 학습되는 parameter가 무엇인지 찾습니다.
-3. loss에서 각 parameter로 gradient가 어떻게 전달되는지 생각합니다.
-4. 코드를 실행합니다.
-5. 터미널 값과 `outputs/`에 저장된 그림을 함께 봅니다.
-6. 한 번에 조건 하나만 바꾸어 다시 실험합니다.
-
-특히 CNN에서는 다음을 구분합니다.
-
-```text
-filter weight = optimizer가 업데이트하는 learnable parameter
-feature map   = 입력과 현재 filter로 계산된 activation
-```
-
-따라서 feature map 자체가 parameter로 학습되는 것이 아니라 **filter가 학습됨에 따라 같은 입력의 feature map이 변화**합니다.
-
-## 실습 구조
-
-```text
-pytorch-deep-learning-practice/
-├── environment.yml
-├── README.md
-├── docs/
-│   └── STUDY_GUIDE.md
-├── scripts/
-│   ├── 00_check_environment.py
-│   └── setup_env.sh
-├── lessons/
-│   ├── 00_xor_mlp.py
-│   ├── 01_tensor_autograd.py
-│   ├── 02_linear_regression_manual.py
-│   ├── 03_linear_regression_torch.py
-│   ├── 04_mnist_mlp.py
-│   ├── 05_mnist_cnn.py
-│   ├── 06_optimizer_compare.py
-│   ├── 07_initialization_compare.py
-│   ├── 08_regularization_compare.py
-│   ├── 09_rnn_sequence.py
-│   └── 10_batch_normalization.py
-└── outputs/
-```
-
-## 데이터
-
-MNIST 실습은 `torchvision.datasets.MNIST`를 사용하며 처음 실행할 때 `./data`에 다운로드합니다.
-
-## 결과 파일
-
-각 실습은 결과를 다음처럼 분리하여 저장합니다.
-
-```text
-outputs/<lesson_name>/
-```
-
-예를 들어 CNN 실습:
-
-```bash
-python lessons/05_mnist_cnn.py
-```
-
-은 epoch별 Conv filter와 feature map, training curve를 `outputs/05_mnist_cnn/`에 저장합니다.
-
-## 공부할 때 중요한 점
-
-이 코드는 성능 benchmark가 목적이 아닙니다. 강의 개념을 눈으로 확인하기 위해 일부러 작은 network와 단순한 dataset을 사용합니다.
-
-따라서 optimizer 비교에서 한 optimizer가 더 좋은 숫자를 보였다고 해서 일반적으로 더 우수하다고 결론 내리지 않고, initialization/regularization 실험도 해당 실험 조건에서 나타나는 현상을 이해하는 데 초점을 둡니다.
+먼저 **MNIST 자체와 MLP/CNN의 차이를 이해한 뒤** 이 변수들을 추가합니다.
