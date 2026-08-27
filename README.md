@@ -170,7 +170,9 @@ clean MNIST로 학습한 MLP/CNN을 다음 test input에 그대로 평가합니�
 
 ## 환경 구성
 
-기존 Conda 환경을 그대로 사용합니다.
+같은 코드를 연구실 GPU PC와 CPU-only 노트북에서 사용할 수 있도록 환경 파일을 분리합니다.
+
+### 연구실 PC: NVIDIA GPU
 
 ```bash
 git clone https://github.com/nayana224/pytorch-deep-learning-practice.git
@@ -180,13 +182,39 @@ conda activate pytorch-dl-practice
 python scripts/00_check_environment.py
 ```
 
-연구실 PC에서는:
+기본 파일은 `environment.yml`이고 환경 이름은 `pytorch-dl-practice`입니다.
+
+연구실 PC에서는 현재 다음 경로를 사용합니다.
 
 ```text
 ~/inpyo_ws/pytorch-deep-learning-practice
 ```
 
-를 사용합니다.
+### 개인 노트북: CPU only
+
+NVIDIA GPU나 CUDA가 없어도 모든 MNIST 실습을 실행할 수 있습니다.
+
+```bash
+git clone https://github.com/nayana224/pytorch-deep-learning-practice.git
+cd pytorch-deep-learning-practice
+bash scripts/setup_cpu_env.sh
+conda activate pytorch-dl-practice-cpu
+python scripts/00_check_environment.py
+```
+
+CPU 환경은 `environment.cpu.yml`을 사용하며 PyTorch CPU wheel을 명시적으로 설치합니다.
+
+정상적인 CPU 환경에서는 대략 다음처럼 보입니다.
+
+```text
+torch: 2.12.1+cpu
+PyTorch CUDA runtime: None
+CUDA available: False
+```
+
+이것은 오류가 아닙니다. lesson 코드들은 `torch.cuda.is_available()`을 확인해 GPU가 없으면 자동으로 CPU를 사용합니다.
+
+GPU 환경과 CPU 환경을 같은 이름으로 덮어쓰지 않고 각각 별도 Conda 환경으로 두는 이유는 연구실 PC의 CUDA 구성을 건드리지 않으면서 노트북에서도 동일 코드를 재현하기 위해서입니다.
 
 ## 실험 원칙
 
