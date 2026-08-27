@@ -28,7 +28,12 @@ class PermutedDataset(Dataset):
 class Mlp(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.net = nn.Sequential(nn.Flatten(), nn.Linear(784, 128), nn.ReLU(), nn.Linear(128, 10))
+        self.net = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(784, 128),
+            nn.ReLU(),
+            nn.Linear(128, 10),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
@@ -38,8 +43,12 @@ class Cnn(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(1, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(1, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
         )
         self.fc = nn.Linear(32 * 7 * 7, 10)
 
@@ -112,17 +121,29 @@ def main() -> None:
     plt.close(figure)
 
     conditions = {
-        "MLP original": (Mlp(), train_set, test_set),
-        "MLP permuted": (Mlp(), permuted_train, permuted_test),
-        "CNN original": (Cnn(), train_set, test_set),
-        "CNN permuted": (Cnn(), permuted_train, permuted_test),
+        "MLP original": (Mlp, train_set, test_set),
+        "MLP permuted": (Mlp, permuted_train, permuted_test),
+        "CNN original": (Cnn, train_set, test_set),
+        "CNN permuted": (Cnn, permuted_train, permuted_test),
     }
 
     histories: dict[str, list[float]] = {}
-    for name, (model, current_train, current_test) in conditions.items():
+    for name, (model_class, current_train, current_test) in conditions.items():
+        # 같은 architecture끼리는 같은 random seed에서 시작해 입력 조건만 비교한다.
         torch.manual_seed(0)
-        train_loader = DataLoader(current_train, batch_size=128, shuffle=True, num_workers=2)
-        test_loader = DataLoader(current_test, batch_size=256, shuffle=False, num_workers=2)
+        model = model_class()
+        train_loader = DataLoader(
+            current_train,
+            batch_size=128,
+            shuffle=True,
+            num_workers=2,
+        )
+        test_loader = DataLoader(
+            current_test,
+            batch_size=256,
+            shuffle=False,
+            num_workers=2,
+        )
         histories[name] = train_and_evaluate(model, train_loader, test_loader, device)
         print(f"{name}: final_accuracy={histories[name][-1]:.4f}")
 
