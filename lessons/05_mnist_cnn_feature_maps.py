@@ -1,7 +1,8 @@
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
-
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
@@ -16,14 +17,22 @@ epochs = 1
 
 
 # --------------------------------------------------
-# 2. MNIST -> Tensor
+# 2. Output directory
+# --------------------------------------------------
+
+OUTPUT_DIR = Path(__file__).resolve().parents[1] / "outputs" / "05_mnist_cnn_feature_maps"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# --------------------------------------------------
+# 3. MNIST -> Tensor
 # --------------------------------------------------
 
 transform = transforms.ToTensor()
 
 
 # --------------------------------------------------
-# 3. Dataset
+# 4. Dataset
 # --------------------------------------------------
 
 train_dataset = datasets.MNIST(
@@ -42,7 +51,7 @@ test_dataset = datasets.MNIST(
 
 
 # --------------------------------------------------
-# 4. DataLoader
+# 5. DataLoader
 # --------------------------------------------------
 
 train_loader = DataLoader(
@@ -59,7 +68,7 @@ test_loader = DataLoader(
 
 
 # --------------------------------------------------
-# 5. CNN Model
+# 6. CNN Model
 # --------------------------------------------------
 
 class CNN(nn.Module):
@@ -104,7 +113,6 @@ class CNN(nn.Module):
         x = self.pool(x)
 
         x = x.view(x.size(0), -1)
-
         x = self.fc(x)
 
         return x
@@ -114,7 +122,7 @@ model = CNN()
 
 
 # --------------------------------------------------
-# 6. Loss / Optimizer
+# 7. Loss / Optimizer
 # --------------------------------------------------
 
 criterion = nn.CrossEntropyLoss()
@@ -126,7 +134,7 @@ optimizer = torch.optim.Adam(
 
 
 # --------------------------------------------------
-# 7. 고정된 test image 하나 선택
+# 8. 고정된 test image 하나 선택
 # --------------------------------------------------
 
 sample_image, sample_label = test_dataset[0]
@@ -136,7 +144,7 @@ print("sample label:", sample_label)
 
 
 # --------------------------------------------------
-# 8. Feature map 추출 함수
+# 9. Feature map 추출 함수
 # --------------------------------------------------
 
 def get_feature_maps(model, image):
@@ -144,7 +152,6 @@ def get_feature_maps(model, image):
     model.eval()
 
     with torch.no_grad():
-
         x = image.unsqueeze(0)
 
         conv1 = model.conv1(x)
@@ -159,12 +166,13 @@ def get_feature_maps(model, image):
 
 
 # --------------------------------------------------
-# 9. Feature map 시각화 함수
+# 10. Feature map 저장 함수
 # --------------------------------------------------
 
-def show_feature_maps(
+def save_feature_maps(
     feature_maps,
     title,
+    filename,
     max_channels=8,
 ):
 
@@ -184,30 +192,30 @@ def show_feature_maps(
     axes = axes.flatten()
 
     for i in range(len(axes)):
-
         if i < num_channels:
-
             axes[i].imshow(
                 feature_maps[i].cpu(),
                 cmap="gray",
             )
-
-            axes[i].set_title(
-                f"channel {i}"
-            )
+            axes[i].set_title(f"channel {i}")
 
         axes[i].axis("off")
 
-    plt.suptitle(title)
-    plt.tight_layout()
-    plt.show()
+    fig.suptitle(title)
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / filename
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    print("saved:", output_path)
 
 
 # --------------------------------------------------
-# 10. Conv1 filter 시각화 함수
+# 11. Conv1 filter 저장 함수
 # --------------------------------------------------
 
-def show_conv1_filters(model, title):
+def save_conv1_filters(model, title, filename):
 
     filters = model.conv1.weight.detach().cpu()
 
@@ -220,27 +228,51 @@ def show_conv1_filters(model, title):
     axes = axes.flatten()
 
     for i in range(16):
-
         kernel = filters[i, 0]
 
         axes[i].imshow(
             kernel,
             cmap="gray",
         )
-
-        axes[i].set_title(
-            f"filter {i}"
-        )
-
+        axes[i].set_title(f"filter {i}")
         axes[i].axis("off")
 
-    plt.suptitle(title)
-    plt.tight_layout()
-    plt.show()
+    fig.suptitle(title)
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / filename
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    print("saved:", output_path)
 
 
 # --------------------------------------------------
-# 11. 학습 전 feature map 저장
+# 12. 원본 이미지 저장 함수
+# --------------------------------------------------
+
+def save_original_image(image, label):
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+
+    ax.imshow(
+        image.squeeze(),
+        cmap="gray",
+    )
+    ax.set_title(f"Original Image - Label: {label}")
+    ax.axis("off")
+
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / "05_mnist_cnn_feature_maps_original_image.png"
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    print("saved:", output_path)
+
+
+# --------------------------------------------------
+# 13. 학습 전 feature map 저장
 # --------------------------------------------------
 
 before_relu1, _, before_relu2, _ = get_feature_maps(
@@ -248,29 +280,42 @@ before_relu1, _, before_relu2, _ = get_feature_maps(
     sample_image,
 )
 
+save_original_image(
+    sample_image,
+    sample_label,
+)
 
-# --------------------------------------------------
-# 12. 학습 전 filter 확인
-# --------------------------------------------------
+save_feature_maps(
+    before_relu1,
+    "Conv1 + ReLU - Before Training",
+    "05_mnist_cnn_feature_maps_conv1_before_training.png",
+)
 
-show_conv1_filters(
+save_feature_maps(
+    before_relu2,
+    "Conv2 + ReLU - Before Training",
+    "05_mnist_cnn_feature_maps_conv2_before_training.png",
+)
+
+save_conv1_filters(
     model,
     "Conv1 Filters - Before Training",
+    "05_mnist_cnn_feature_maps_conv1_filters_before_training.png",
 )
 
 
 # --------------------------------------------------
-# 13. Training
+# 14. Training
 # --------------------------------------------------
+
+loss_history = []
 
 for epoch in range(epochs):
 
     model.train()
-
     total_loss = 0.0
 
     for images, labels in train_loader:
-
         outputs = model(images)
 
         loss = criterion(
@@ -279,16 +324,13 @@ for epoch in range(epochs):
         )
 
         optimizer.zero_grad()
-
         loss.backward()
-
         optimizer.step()
 
         total_loss += loss.item()
 
-    average_loss = (
-        total_loss / len(train_loader)
-    )
+    average_loss = total_loss / len(train_loader)
+    loss_history.append(average_loss)
 
     print(
         f"Epoch [{epoch + 1}/{epochs}], "
@@ -297,7 +339,7 @@ for epoch in range(epochs):
 
 
 # --------------------------------------------------
-# 14. Test
+# 15. Test
 # --------------------------------------------------
 
 model.eval()
@@ -306,9 +348,7 @@ correct = 0
 total = 0
 
 with torch.no_grad():
-
     for images, labels in test_loader:
-
         outputs = model(images)
 
         _, predicted = torch.max(
@@ -317,7 +357,6 @@ with torch.no_grad():
         )
 
         total += labels.size(0)
-
         correct += (
             predicted == labels
         ).sum().item()
@@ -325,86 +364,65 @@ with torch.no_grad():
 
 accuracy = 100 * correct / total
 
-print(
-    f"Test Accuracy: {accuracy:.2f}%"
+print(f"Test Accuracy: {accuracy:.2f}%")
+
+
+# --------------------------------------------------
+# 16. 학습 결과 텍스트 저장
+# --------------------------------------------------
+
+metrics_path = OUTPUT_DIR / "05_mnist_cnn_feature_maps_metrics.txt"
+
+with metrics_path.open("w", encoding="utf-8") as f:
+    f.write(f"epochs={epochs}\n")
+    f.write(f"batch_size={batch_size}\n")
+    f.write(f"learning_rate={learning_rate}\n")
+    f.write(f"average_loss={loss_history[-1]:.6f}\n")
+    f.write(f"test_accuracy={accuracy:.2f}%\n")
+
+print("saved:", metrics_path)
+
+
+# --------------------------------------------------
+# 17. 학습 후 feature map 추출
+# --------------------------------------------------
+
+after_relu1, pool1, after_relu2, pool2 = get_feature_maps(
+    model,
+    sample_image,
 )
 
 
 # --------------------------------------------------
-# 15. 학습 후 feature map 추출
+# 18. 학습 후 feature map / pooling / filter 저장
 # --------------------------------------------------
 
-after_relu1, pool1, after_relu2, pool2 = (
-    get_feature_maps(
-        model,
-        sample_image,
-    )
-)
-
-
-# --------------------------------------------------
-# 16. 원본 이미지 확인
-# --------------------------------------------------
-
-plt.imshow(
-    sample_image.squeeze(),
-    cmap="gray",
-)
-
-plt.title(
-    f"Original Image - Label: {sample_label}"
-)
-
-plt.axis("off")
-plt.show()
-
-
-# --------------------------------------------------
-# 17. Conv1 feature map
-#     학습 전 / 학습 후 비교
-# --------------------------------------------------
-
-show_feature_maps(
-    before_relu1,
-    "Conv1 + ReLU - Before Training",
-)
-
-show_feature_maps(
+save_feature_maps(
     after_relu1,
     "Conv1 + ReLU - After Training",
+    "05_mnist_cnn_feature_maps_conv1_after_training.png",
 )
 
-
-# --------------------------------------------------
-# 18. Conv2 feature map
-# --------------------------------------------------
-
-show_feature_maps(
+save_feature_maps(
     after_relu2,
     "Conv2 + ReLU - After Training",
+    "05_mnist_cnn_feature_maps_conv2_after_training.png",
 )
 
-
-# --------------------------------------------------
-# 19. Pooling 결과도 한 번 확인
-# --------------------------------------------------
-
-show_feature_maps(
+save_feature_maps(
     pool1,
     "After First Max Pooling",
+    "05_mnist_cnn_feature_maps_pool1_after_training.png",
 )
 
-show_feature_maps(
+save_feature_maps(
     pool2,
     "After Second Max Pooling",
+    "05_mnist_cnn_feature_maps_pool2_after_training.png",
 )
 
-
-# --------------------------------------------------
-# 20. 학습 후 Conv1 filter 확인
-# --------------------------------------------------
-
-show_conv1_filters(
+save_conv1_filters(
     model,
     "Conv1 Filters - After Training",
+    "05_mnist_cnn_feature_maps_conv1_filters_after_training.png",
 )
