@@ -215,9 +215,9 @@ def save_feature_maps(
 # 11. Conv1 filter 저장 함수
 # --------------------------------------------------
 
-def save_conv1_filters(model, title, filename):
+def save_conv1_filters_from_tensor(filters, title, filename, vmin=None, vmax=None):
 
-    filters = model.conv1.weight.detach().cpu()
+    filters = filters.detach().cpu()
 
     fig, axes = plt.subplots(
         4,
@@ -233,6 +233,8 @@ def save_conv1_filters(model, title, filename):
         axes[i].imshow(
             kernel,
             cmap="gray",
+            vmin=vmin,
+            vmax=vmax,
         )
         axes[i].set_title(f"filter {i}")
         axes[i].axis("off")
@@ -272,13 +274,15 @@ def save_original_image(image, label):
 
 
 # --------------------------------------------------
-# 13. 학습 전 feature map 저장
+# 13. 학습 전 상태 저장
 # --------------------------------------------------
 
 before_relu1, _, before_relu2, _ = get_feature_maps(
     model,
     sample_image,
 )
+
+before_conv1_filters = model.conv1.weight.detach().cpu().clone()
 
 save_original_image(
     sample_image,
@@ -297,8 +301,8 @@ save_feature_maps(
     "05_mnist_cnn_feature_maps_conv2_before_training.png",
 )
 
-save_conv1_filters(
-    model,
+save_conv1_filters_from_tensor(
+    before_conv1_filters,
     "Conv1 Filters - Before Training",
     "05_mnist_cnn_feature_maps_conv1_filters_before_training.png",
 )
@@ -368,23 +372,7 @@ print(f"Test Accuracy: {accuracy:.2f}%")
 
 
 # --------------------------------------------------
-# 16. 학습 결과 텍스트 저장
-# --------------------------------------------------
-
-metrics_path = OUTPUT_DIR / "05_mnist_cnn_feature_maps_metrics.txt"
-
-with metrics_path.open("w", encoding="utf-8") as f:
-    f.write(f"epochs={epochs}\n")
-    f.write(f"batch_size={batch_size}\n")
-    f.write(f"learning_rate={learning_rate}\n")
-    f.write(f"average_loss={loss_history[-1]:.6f}\n")
-    f.write(f"test_accuracy={accuracy:.2f}%\n")
-
-print("saved:", metrics_path)
-
-
-# --------------------------------------------------
-# 17. 학습 후 feature map 추출
+# 16. 학습 후 feature map / filter 추출
 # --------------------------------------------------
 
 after_relu1, pool1, after_relu2, pool2 = get_feature_maps(
@@ -392,9 +380,11 @@ after_relu1, pool1, after_relu2, pool2 = get_feature_maps(
     sample_image,
 )
 
+after_conv1_filters = model.conv1.weight.detach().cpu().clone()
+
 
 # --------------------------------------------------
-# 18. 학습 후 feature map / pooling / filter 저장
+# 17. 학습 후 feature map / pooling 저장
 # --------------------------------------------------
 
 save_feature_maps(
@@ -421,8 +411,134 @@ save_feature_maps(
     "05_mnist_cnn_feature_maps_pool2_after_training.png",
 )
 
-save_conv1_filters(
-    model,
+save_conv1_filters_from_tensor(
+    after_conv1_filters,
     "Conv1 Filters - After Training",
     "05_mnist_cnn_feature_maps_conv1_filters_after_training.png",
 )
+
+
+# --------------------------------------------------
+# 18. 발표용 Before / After 비교 이미지
+# --------------------------------------------------
+
+def save_feature_map_comparison(before, after, title, filename, max_channels=8):
+
+    before = before.squeeze(0).cpu()
+    after = after.squeeze(0).cpu()
+    num_channels = min(before.size(0), after.size(0), max_channels)
+
+    fig, axes = plt.subplots(2, num_channels, figsize=(2 * num_channels, 4.5))
+
+    for i in range(num_channels):
+        shared_min = min(before[i].min().item(), after[i].min().item())
+        shared_max = max(before[i].max().item(), after[i].max().item())
+
+        axes[0, i].imshow(before[i], cmap="gray", vmin=shared_min, vmax=shared_max)
+        axes[0, i].set_title(f"ch {i}")
+        axes[0, i].axis("off")
+
+        axes[1, i].imshow(after[i], cmap="gray", vmin=shared_min, vmax=shared_max)
+        axes[1, i].axis("off")
+
+    axes[0, 0].set_ylabel("Before", fontsize=12)
+    axes[1, 0].set_ylabel("After", fontsize=12)
+
+    fig.suptitle(title)
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / filename
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    print("saved:", output_path)
+
+
+def save_filter_comparison(before_filters, after_filters, filename):
+
+    before_filters = before_filters.cpu()
+    after_filters = after_filters.cpu()
+
+    max_abs = max(
+        before_filters.abs().max().item(),
+        after_filters.abs().max().item(),
+    )
+
+    fig, axes = plt.subplots(4, 8, figsize=(14, 7))
+
+    for i in range(16):
+        row = i // 4
+        col = (i % 4) * 2
+
+        axes[row, col].imshow(
+            before_filters[i, 0],
+            cmap="gray",
+            vmin=-max_abs,
+            vmax=max_abs,
+        )
+        axes[row, col].set_title(f"F{i} Before", fontsize=9)
+        axes[row, col].axis("off")
+
+        axes[row, col + 1].imshow(
+            after_filters[i, 0],
+            cmap="gray",
+            vmin=-max_abs,
+            vmax=max_abs,
+        )
+        axes[row, col + 1].set_title(f"F{i} After", fontsize=9)
+        axes[row, col + 1].axis("off")
+
+    fig.suptitle("Conv1 Filters - Before vs After Training")
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / filename
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    print("saved:", output_path)
+
+
+save_feature_map_comparison(
+    before_relu1,
+    after_relu1,
+    "Conv1 + ReLU Feature Maps - Before vs After Training",
+    "05_mnist_cnn_feature_maps_conv1_before_after_comparison.png",
+)
+
+save_feature_map_comparison(
+    before_relu2,
+    after_relu2,
+    "Conv2 + ReLU Feature Maps - Before vs After Training",
+    "05_mnist_cnn_feature_maps_conv2_before_after_comparison.png",
+)
+
+save_filter_comparison(
+    before_conv1_filters,
+    after_conv1_filters,
+    "05_mnist_cnn_feature_maps_conv1_filters_before_after_comparison.png",
+)
+
+
+# --------------------------------------------------
+# 19. 학습 결과 / 분석용 수치 저장
+# --------------------------------------------------
+
+metrics_path = OUTPUT_DIR / "05_mnist_cnn_feature_maps_metrics.txt"
+
+conv1_filter_change = torch.mean(
+    torch.abs(after_conv1_filters - before_conv1_filters)
+).item()
+
+with metrics_path.open("w", encoding="utf-8") as f:
+    f.write(f"epochs={epochs}\n")
+    f.write(f"batch_size={batch_size}\n")
+    f.write(f"learning_rate={learning_rate}\n")
+    f.write(f"average_loss={loss_history[-1]:.6f}\n")
+    f.write(f"test_accuracy={accuracy:.2f}%\n")
+    f.write(f"conv1_filter_mean_abs_change={conv1_filter_change:.6f}\n")
+    f.write(f"conv1_before_zero_ratio={(before_relu1 == 0).float().mean().item():.6f}\n")
+    f.write(f"conv1_after_zero_ratio={(after_relu1 == 0).float().mean().item():.6f}\n")
+    f.write(f"conv2_before_zero_ratio={(before_relu2 == 0).float().mean().item():.6f}\n")
+    f.write(f"conv2_after_zero_ratio={(after_relu2 == 0).float().mean().item():.6f}\n")
+
+print("saved:", metrics_path)
