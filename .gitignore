@@ -4,6 +4,11 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.ipynb_checkpoints/
 data/
 outputs/*
 !outputs/.gitkeep
+external/
+checkpoints/
+*.pth
+*.pt
