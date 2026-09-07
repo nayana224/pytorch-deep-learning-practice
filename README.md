@@ -2,11 +2,53 @@
 
 이 저장소는 **PyTorch로 딥러닝 구조를 직접 구현하고, 중간 tensor와 시각화를 보면서 이해하기 위한 실습 저장소**입니다.
 
+목표는 최신 모델을 많이 실행하는 것이 아니라,
+
+- 코드를 한 단계씩 직접 타이핑하고
+- 각 layer의 tensor shape과 데이터 흐름을 확인하고
+- filter / feature map / attention / segmentation 결과를 시각화하고
+- 왜 이런 구조가 필요한지 설명할 수 있게 되는 것
+
+입니다.
+
 기존 `lessons/`에는 MNIST 기반 MLP/CNN 기초 실습이 있고, 그 다음 단계는 `notebooks/`에서 **ResNet → U-Net → Attention → Transformer → ViT → SAM → SAM2** 순서로 진행합니다.
 
 ---
 
-## 1. 전체 학습 순서
+## 1. 이 저장소의 공부 방식
+
+각 실습은 다음 흐름으로 진행합니다.
+
+```text
+핵심 질문
+   ↓
+실습 전 예상/가설
+   ↓
+작은 코드부터 직접 구현
+   ↓
+중간 tensor shape 확인
+   ↓
+학습 또는 inference
+   ↓
+가능한 한 많이 시각화
+   ↓
+결과 해석
+   ↓
+다음 모델과 연결
+```
+
+중요한 원칙은 다음과 같습니다.
+
+- 처음부터 완성 코드를 통째로 복사하지 않습니다.
+- notebook을 짧은 cell로 나누고 순서대로 직접 타이핑합니다.
+- accuracy만 확인하지 않습니다.
+- 중요한 tensor는 shape뿐 아니라 가능하면 실제 값이나 그림으로 확인합니다.
+- 비교 실험에서는 한 번에 한 조건만 바꿉니다.
+- 결과를 보기 전에 가능하면 먼저 예상한 뒤 실제 결과와 비교합니다.
+
+---
+
+## 2. 전체 학습 순서
 
 ### Phase 1 — 기초
 
@@ -67,21 +109,65 @@ notebooks/
     └── sam2_video.ipynb
 ```
 
-각 notebook은 처음부터 정답 코드를 모두 넣기보다 아래 흐름으로 직접 채워가는 방식입니다.
+각 notebook은 처음부터 정답 코드를 모두 넣기보다 아래 흐름으로 직접 채워갑니다.
 
 ```text
 학습 목표
  → 입력 데이터 / shape 확인
- → 모델 구현
+ → 작은 모듈부터 구현
+ → 전체 모델 연결
  → forward 중간 tensor 확인
  → 학습 또는 inference
  → 시각화
+ → 실패 사례 확인
  → 결과 해석
 ```
 
 ---
 
-# 2. 가장 쉬운 환경 설정 방법
+## 3. 모델별로 무엇을 시각화할까?
+
+| 모델 | 반드시 보고 싶은 것 |
+|---|---|
+| MLP | 입력 이미지, flatten 결과, 첫 layer weight, confusion matrix |
+| CNN | convolution filter, training 전/후 feature map, prediction |
+| ResNet | residual block의 `x`, `F(x)`, `F(x)+x`, Plain CNN과 loss 비교 |
+| U-Net | input, ground truth mask, predicted mask, overlay, error map |
+| Attention | Q/K/V shape, score matrix, softmax 결과, attention heatmap |
+| Transformer | head별 attention, residual 전/후, layer output shape |
+| ViT | patch 분할, patch embedding, positional embedding, attention map |
+| SAM | point/box prompt와 mask overlay, prompt 변화에 따른 mask 차이 |
+| SAM2 | frame별 mask propagation, prompt 이후 video tracking 결과 |
+
+시각화 결과 중 중요한 것은 notebook 화면에서만 보지 않고 `outputs/`에도 저장합니다.
+
+예:
+
+```text
+outputs/03_resnet/plain_vs_resnet_loss.png
+outputs/04_unet/prediction_overlay.png
+outputs/05_attention/attention_heatmap.png
+outputs/07_vit/image_patches.png
+```
+
+---
+
+## 4. 참고 논문
+
+논문을 먼저 전부 이해한 뒤 코딩하려고 하기보다, **논문의 핵심 구조를 읽고 바로 작은 구현과 시각화로 확인하는 방식**을 권장합니다.
+
+| 순서 | 모델/논문 | PDF |
+|---:|---|---|
+| 1 | U-Net — *Convolutional Networks for Biomedical Image Segmentation* (2015) | https://arxiv.org/pdf/1505.04597 |
+| 2 | ResNet — *Deep Residual Learning for Image Recognition* (2015) | https://arxiv.org/pdf/1512.03385 |
+| 3 | Transformer — *Attention Is All You Need* (2017) | https://arxiv.org/pdf/1706.03762 |
+| 4 | ViT — *An Image is Worth 16×16 Words* (2020) | https://arxiv.org/pdf/2010.11929 |
+| 5 | SAM — *Segment Anything* (2023) | https://arxiv.org/pdf/2304.02643 |
+| 6 | SAM2 — *SAM 2: Segment Anything in Images and Videos* (2024) | https://arxiv.org/pdf/2408.00714 |
+
+---
+
+# 5. 가장 쉬운 환경 설정 방법
 
 VSCode + Miniconda 기준입니다.
 
@@ -142,7 +228,7 @@ python scripts/00_check_environment.py
 
 ---
 
-# 3. VSCode에서 `.ipynb` 실행하기
+# 6. VSCode에서 `.ipynb` 실행하기
 
 예를 들어:
 
@@ -177,7 +263,7 @@ python -m ipykernel install --user \
 
 ---
 
-# 4. GPU / CPU 확인
+# 7. GPU / CPU 확인
 
 Notebook 첫 cell에서 아래 코드를 실행하면 됩니다.
 
@@ -205,7 +291,7 @@ SAM/SAM2, 특히 SAM2 video 실습은 GPU 사용을 권장합니다.
 
 ---
 
-# 5. 기존 Python script 실습
+# 8. 기존 Python script 실습
 
 기존 `lessons/`는 그대로 유지합니다.
 
@@ -231,7 +317,7 @@ python lessons/05_mnist_cnn_feature_maps.py
 
 ---
 
-# 6. 모델별 실습 목표
+# 9. 모델별 실습 목표
 
 | 순서 | 모델 | 핵심 질문 |
 |---:|---|---|
@@ -251,7 +337,26 @@ SAM/SAM2는 모델이 크므로 처음부터 재구현하지 않고 **공식 pre
 
 ---
 
-# 7. SAM 추가 설정
+# 10. 각 notebook에서 반복할 체크리스트
+
+실습 중에는 아래를 반복해서 확인합니다.
+
+```text
+[ ] 이 실습의 핵심 질문을 한 문장으로 설명할 수 있는가?
+[ ] 입력 tensor의 shape / dtype / range를 확인했는가?
+[ ] 각 주요 layer의 출력 shape를 설명할 수 있는가?
+[ ] 학습되는 parameter와 단순 intermediate tensor를 구분할 수 있는가?
+[ ] 최소 하나 이상의 중간 표현을 시각화했는가?
+[ ] 예상과 실제 결과가 같은가?
+[ ] 실패 사례를 하나 이상 확인했는가?
+[ ] 이전 모델과 무엇이 달라졌는지 설명할 수 있는가?
+```
+
+코드가 실행된다는 것과 구조를 이해했다는 것은 같은 의미가 아닙니다.
+
+---
+
+# 11. SAM 추가 설정
 
 기본 notebook 환경을 먼저 만든 상태에서 실행합니다.
 
@@ -291,7 +396,7 @@ notebooks/08_sam/sam_food.ipynb
 
 ---
 
-# 8. SAM2 추가 설정
+# 12. SAM2 추가 설정
 
 SAM2는 기본 모델보다 dependency와 GPU 요구가 더 큽니다.
 
@@ -337,7 +442,7 @@ notebooks/09_sam2/sam2_video.ipynb
 
 ---
 
-# 9. 데이터와 checkpoint를 GitHub에 올리지 않는 이유
+# 13. 데이터와 checkpoint를 GitHub에 올리지 않는 이유
 
 아래 항목은 기본적으로 Git에 포함하지 않습니다.
 
@@ -359,7 +464,7 @@ checkpoints/
 
 ---
 
-# 10. 실습 원칙
+# 14. 실습 원칙
 
 이 저장소에서는 단순히 `accuracy가 높다`로 끝내지 않습니다.
 
@@ -401,7 +506,7 @@ Plain CNN vs Residual CNN
 
 ---
 
-# 11. Custom Food와 연결
+# 15. Custom Food와 연결
 
 최종 목적은 모델 이름을 많이 구현하는 것이 아니라 배운 개념을 실제 perception 문제에 연결하는 것입니다.
 
@@ -429,6 +534,8 @@ vs
 ```
 
 그리고 mask accuracy만 볼 것이 아니라 tray wall, sauce, reflection, depth invalid region 등 실제 manipulation pipeline에서 문제가 되는 failure case를 기록합니다.
+
+새 모델을 넣는 것 자체를 목표로 하지 않습니다. 기존 pipeline의 어떤 실패를 해결하려는지 먼저 정의하고, 실제 개선되는지 비교 실험으로 확인합니다.
 
 ---
 
@@ -463,3 +570,5 @@ Python (pytorch-dl-notebook)
 ```
 
 으로 선택하면 됩니다.
+
+그 이후에는 **코드를 한 셀씩 직접 타이핑하고, 바로 실행하고, 바로 시각화해서 확인하는 방식**으로 진행합니다.
