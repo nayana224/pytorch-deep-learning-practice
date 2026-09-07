@@ -1,0 +1,19 @@
+name: pytorch-dl-notebook
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - matplotlib
+  - pillow
+  - pip:
+      - torch==2.12.1
+      - torchvision==0.27.1
+      - jupyterlab
+      - ipykernel
+      - scikit-learn
+      - pandas
+      - tqdm
