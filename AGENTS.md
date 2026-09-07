@@ -3,12 +3,17 @@
 ## 프로젝트 목적
 이 저장소는 PyTorch 딥러닝 학습용 실습 저장소다. 코드 완성보다 각 모델이 왜 필요한지, 데이터가 어떤 shape으로 흐르는지, 무엇을 관찰해야 하는지 이해하는 것을 우선한다.
 
+사용자가 직접 코드를 한 단계씩 타이핑하며 공부하는 것이 핵심 목표다. AI/Codex는 사용자의 사고와 구현 연습을 대체하기보다, 실습의 순서와 관찰 포인트를 설계하는 역할을 우선한다.
+
 ## 작업 원칙
 - 기존 `lessons/`의 MLP/CNN 실습은 보존한다.
 - 논문/모델 확장 실습은 `notebooks/` 아래에 단계별로 추가한다.
 - 한 실습은 하나의 핵심 질문을 가진다.
-- accuracy만 기록하지 말고 tensor shape, feature/attention/mask 등 중간 결과를 시각화한다.
+- 완성 코드를 처음부터 한꺼번에 넣기보다, 사용자가 셀 단위로 직접 타이핑하고 실행할 수 있는 작은 단계로 나눈다.
+- 각 단계에는 `왜 필요한가`, `입력/출력 shape은 무엇인가`, `무엇을 관찰해야 하는가`를 명확히 적는다.
+- accuracy만 기록하지 말고 tensor shape, activation, filter, feature map, attention, mask, error case 등 중간 결과를 적극적으로 시각화한다.
 - 비교 실험에서는 한 번에 한 조건만 바꾼다.
+- 결과를 보기 전에 가능한 경우 예상/가설을 먼저 적고, 실제 결과와 비교한다.
 - 큰 foundation model(SAM/SAM2)은 처음부터 재구현하지 않고 공식 pretrained 모델을 사용한 inference와 내부 구조 분석을 우선한다.
 - MLP, CNN, ResNet, U-Net, Attention, Transformer, ViT는 가능한 한 작은 형태를 직접 구현해 구조를 이해한다.
 - 새 작업을 진행할 때 README와 본 파일의 범위/원칙이 현재 저장소 상태와 일치하는지 함께 확인한다.
@@ -19,13 +24,119 @@
 - `outputs/`: 실행 결과 이미지/모델/로그
 - `scripts/`: 환경 설정과 점검 스크립트
 
-## Notebook 기본 구성
-각 notebook은 가능하면 다음 순서를 따른다.
-1. 학습 목표 / 핵심 질문
-2. 입력 데이터와 tensor shape 확인
-3. 모델 구성
-4. forward 과정의 중간 shape 확인
-5. 학습 또는 inference
-6. 시각화
-7. 결과 해석
-8. 다음 실험에서 바꿀 한 가지 변수
+## Notebook 작성 원칙
+각 notebook은 가능한 한 짧은 셀로 나누고, 아래 순서를 따른다.
+
+1. 제목 / 관련 논문
+2. 핵심 질문
+3. 실습 전 예상 또는 가설
+4. 필요한 개념을 짧게 정리
+5. 입력 데이터와 tensor shape 확인
+6. 모델을 작은 모듈부터 직접 구현
+7. forward 과정의 중간 shape 확인
+8. 학습 또는 inference
+9. 중간 표현 및 결과 시각화
+10. 실패 사례 / 오분류 / 애매한 결과 확인
+11. 결과 해석
+12. 한 줄 정리
+13. 다음 실습으로의 연결
+
+## 단계별 구현 규칙
+- 한 셀에서 너무 많은 개념을 동시에 구현하지 않는다.
+- 가능하면 `데이터 확인 → 작은 모듈 → 전체 모델 → 학습 → 분석` 순서로 확장한다.
+- 사용자가 직접 타이핑하는 단계에서는 boilerplate를 과도하게 늘리지 않는다.
+- 핵심 연산은 라이브러리 한 줄로 숨기기 전에 한 번은 직접 구현해보는 것을 우선한다.
+- 직접 구현 후 공식 구현이나 `torchvision` 구현과 비교하는 것은 권장한다.
+
+## 시각화 우선 원칙
+가능하면 다음 시각화를 포함한다.
+
+### 공통
+- input sample
+- tensor shape 흐름
+- training / validation loss
+- accuracy 또는 task metric
+- prediction 예시
+- failure case
+
+### MLP
+- 입력 이미지와 flatten 결과
+- 첫 layer weight를 이미지 형태로 재배치
+- confusion matrix
+
+### CNN
+- convolution kernel/filter
+- training 전/후 feature map
+- layer별 activation
+- receptive field를 이해할 수 있는 예시
+
+### ResNet
+- residual block 내부 shape
+- `F(x)`와 `x`, `F(x)+x` 비교
+- Plain CNN vs ResNet training curve
+- 가능하면 gradient norm 또는 activation 분포 비교
+
+### U-Net
+- input image
+- ground-truth mask
+- predicted mask
+- prediction overlay
+- error map
+- encoder/decoder feature map 일부
+
+### Attention / Transformer
+- Q, K, V shape
+- attention score matrix
+- softmax 전/후 값
+- attention heatmap
+- head별 attention 차이
+
+### ViT
+- 원본 이미지의 patch 분할
+- patch embedding 전/후 shape
+- positional embedding 적용 전/후
+- attention map
+
+### SAM / SAM2
+- 입력 이미지/프레임
+- point / box prompt
+- predicted mask overlay
+- prompt 변화에 따른 mask 비교
+- SAM2에서는 frame별 propagation 결과와 memory 효과를 관찰할 수 있는 예시
+
+## 출력 저장 규칙
+- 생성 결과는 `outputs/` 아래 모델/실습별 폴더에 저장한다.
+- notebook 화면에만 보여주지 말고 중요한 결과는 파일로도 저장한다.
+- 파일명은 무엇을 보여주는지 알 수 있게 작성한다.
+
+예:
+- `outputs/03_resnet/plain_vs_resnet_loss.png`
+- `outputs/04_unet/prediction_overlay.png`
+- `outputs/05_attention/attention_heatmap.png`
+- `outputs/07_vit/image_patches.png`
+
+## 구현 우선순위
+직접 구현:
+- MLP
+- CNN
+- ResNet
+- U-Net
+- Attention
+- Transformer
+- ViT
+
+공식 코드 사용 + 내부 분석:
+- SAM
+- SAM2
+
+## Custom Food와의 연결
+후반 실습은 `custom_food_target_mass_ws`의 perception 문제와 연결할 수 있도록 설계한다.
+
+예:
+- U-Net 기반 food segmentation
+- 기존 food mask와 SAM mask 비교
+- RGB / Depth / mask 동시 시각화
+- tray wall, sauce, reflection, depth invalid region 등의 failure case 기록
+- 향후 graspable mask 또는 graspability map 학습 가능성 분석
+
+단, foundation model을 프로젝트에 넣는 것 자체를 목표로 하지 않는다. 기존 pipeline에서 어떤 문제가 있고, 새 모델이 그 문제를 실제로 개선하는지 실험으로 검증한 뒤 적용 여부를 결정한다.
