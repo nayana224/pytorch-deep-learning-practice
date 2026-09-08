@@ -129,6 +129,14 @@
 - SAM
 - SAM2
 
+## 학습 결과 리뷰 원칙
+- 실습 결과를 리뷰할 때는 `확인한 사실`과 `아직 검증하지 않은 가설/의문`을 분리한다.
+- 데이터 파이프라인은 가능한 한 `raw data → transform → tensor → batch → model input` 순서로 추적하고, 각 단계의 shape, dtype, 수치 범위와 의미를 확인한다.
+- `ToTensor()`의 0~1 스케일 변환, 입력 데이터의 normalization/standardization, 모델 내부의 BatchNorm/LayerNorm을 서로 다른 개념으로 구분한다.
+- 단일 실행의 accuracy 차이만으로 모델의 일반적 우수성을 결론내리지 않는다. 비교 목적이면 seed, 데이터 순서, epoch, optimizer 등 통제 조건을 기록한다.
+- 실제 연구 데이터로 확장하기 전에는 RGB/RGB-D의 채널 의미, 단위, invalid 값, 센서 정렬, 좌표계, normalization 기준, augmentation의 물리적 타당성을 별도 검증 대상으로 둔다.
+- 전처리 비교 실험은 한 번에 하나의 조건만 바꾸고, 입력 분포와 학습/검증 결과 변화를 함께 기록한다.
+
 ## Custom Food와의 연결
 후반 실습은 `custom_food_target_mass_ws`의 perception 문제와 연결할 수 있도록 설계한다.
 
