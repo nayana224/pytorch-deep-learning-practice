@@ -6,9 +6,9 @@
 사용자가 직접 코드를 한 단계씩 타이핑하며 공부하는 것이 핵심 목표다. AI/Codex는 사용자의 사고와 구현 연습을 대체하기보다, 실습의 순서와 관찰 포인트를 설계하는 역할을 우선한다.
 
 ## 작업 원칙
-- 기존 `lessons/`의 MLP/CNN 실습은 보존한다.
-- 논문/모델 확장 실습은 `notebooks/` 아래에 단계별로 추가한다.
-- 한 실습은 하나의 핵심 질문을 가진다.
+- 기존 `lessons/`의 MLP/CNN 기초 실습은 보존한다.
+- 논문/모델 확장 실습은 `practice/` 아래에 단계별로 추가한다.
+- 저장소에서 직접 만드는 학습 실습은 기본적으로 `.py` 파일을 사용한다.
 - 완성 코드를 처음부터 한꺼번에 넣기보다, 사용자가 작은 단위로 직접 타이핑하고 실행하도록 한다.
 - 각 단계에는 `왜 필요한가`, `입력/출력 shape은 무엇인가`, `무엇을 관찰해야 하는가`를 명확히 적는다.
 - accuracy만 기록하지 말고 tensor shape, activation, filter, feature map, attention, mask, error case 등 중간 결과를 적극적으로 시각화한다.
@@ -18,11 +18,17 @@
 - MLP, CNN, ResNet, U-Net, Attention, Transformer, ViT는 가능한 한 작은 형태를 직접 구현해 구조를 이해한다.
 - 새 작업을 진행할 때 README와 본 파일의 범위/원칙이 현재 저장소 상태와 일치하는지 함께 확인한다.
 
+## 공개/공식 코드 예외
+- 외부 공개 저장소에서 가져온 공식 코드가 `.ipynb`로 제공되는 경우에는 형식만 바꾸기 위해 임의로 `.py`로 변환하지 않는다.
+- 공식 notebook은 원본 구조를 보존하고, 필요하면 별도의 우리 실습 `.py` 파일에서 핵심 동작을 다시 구현하거나 호출한다.
+- `external/` 등 외부 소스 디렉터리는 학습용 편의 때문에 원본 파일을 임의 수정하지 않는다.
+
 ## 디렉터리 정책
 - `lessons/`: 기존 Python script 기반 기초 실습
-- `notebooks/`: 논문/모델별 실습 파일
+- `practice/`: 논문/모델별 직접 타이핑 실습 (`.py` 중심)
 - `outputs/`: 실행 결과 이미지/모델/로그
 - `scripts/`: 환경 설정과 점검 스크립트
+- `external/`: 필요할 때 clone되는 공식/외부 소스. 원본 구조 보존
 
 ## 단계별 구현 규칙
 - 한 번에 너무 많은 개념을 동시에 구현하지 않는다.
@@ -30,11 +36,43 @@
 - 사용자가 직접 타이핑하는 단계에서는 boilerplate를 과도하게 늘리지 않는다.
 - 핵심 연산은 라이브러리 한 줄로 숨기기 전에 한 번은 직접 구현해보는 것을 우선한다.
 - 직접 구현 후 공식 구현이나 `torchvision` 구현과 비교하는 것은 권장한다.
+- 상태가 누적되는 notebook보다 위에서 아래로 한 번 실행되는 `.py`를 기본으로 사용하여 비교 실험의 재현성을 높인다.
+
+## 현재 논문/모델 실습 구조
+
+```text
+practice/
+├── 01_mlp/
+│   └── mnist_mlp.py
+├── 02_cnn/
+│   ├── mnist_cnn.py
+│   └── feature_maps.py
+├── 03_resnet/
+│   ├── residual_block.py
+│   └── resnet18_cifar10.py
+├── 04_unet/
+│   ├── unet_architecture.py
+│   └── segmentation.py
+├── 05_attention/
+│   ├── single_head_attention.py
+│   └── multi_head_attention.py
+├── 06_transformer/
+│   └── transformer_encoder.py
+├── 07_vit/
+│   ├── patch_embedding.py
+│   └── vit_cifar10.py
+├── 08_sam/
+│   ├── sam_image.py
+│   └── sam_food.py
+└── 09_sam2/
+    ├── sam2_image.py
+    └── sam2_video.py
+```
 
 ## ResNet 논문 실습 진행 원칙
-현재 ResNet 실습은 `notebooks/03_resnet/`에서 진행한다.
+현재 ResNet 실습은 `practice/03_resnet/`에서 진행한다.
 
-이 디렉터리에서는 `.ipynb`를 사용하지 않는다. 모든 실습은 위에서 아래로 실행되는 `.py` 파일로 진행한다. 파일에는 완성 구현을 넣지 않고, 사용자가 직접 타이핑할 수 있도록 설명과 단계별 TODO만 제공한다.
+모든 실습은 위에서 아래로 실행되는 `.py` 파일로 진행한다. 파일에는 완성 구현을 넣지 않고, 사용자가 직접 타이핑할 수 있도록 설명과 단계별 TODO만 제공한다.
 
 현재 파일:
 - `residual_block.py`: `x → F(x) → F(x)+x`, plain/residual 비교, projection shortcut, backward 기초
