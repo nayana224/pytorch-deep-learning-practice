@@ -48,6 +48,35 @@
 - 핵심 연산은 라이브러리 한 줄로 숨기기 전에 한 번은 직접 구현해보는 것을 우선한다.
 - 직접 구현 후 공식 구현이나 `torchvision` 구현과 비교하는 것은 권장한다.
 
+## ResNet 논문 실습 진행 원칙
+현재 ResNet 실습은 `notebooks/03_resnet/`에서 진행한다. 완성 코드를 미리 채우지 않고 사용자가 직접 타이핑하는 방식을 유지한다.
+
+실습 순서는 다음과 같다.
+
+1. `residual_block.ipynb`
+   - 입력 `x`의 shape 확인
+   - plain 2-layer block을 직접 구현
+   - residual branch `F(x)`를 직접 확인
+   - identity shortcut으로 `x`를 더해 `F(x) + x`를 구성
+   - `x`, `F(x)`, `F(x)+x`의 shape/value 통계 비교
+   - 필요하면 projection shortcut을 추가하고 dimension mismatch를 직접 확인
+   - 마지막에 간단한 backward를 수행하여 gradient가 실제로 계산되는지 확인
+
+2. `resnet18_cifar10.ipynb`
+   - CIFAR-10 input / GT / output / loss 흐름 확인
+   - 직접 만든 `BasicBlock`으로 작은 Plain CNN과 작은 ResNet 구성
+   - seed, optimizer, epoch, batch size 등 비교 조건을 통제
+   - Plain CNN vs ResNet의 training loss / accuracy curve 비교
+   - prediction 및 failure case 시각화
+   - 가능하면 residual activation 크기 또는 gradient norm을 관찰
+
+ResNet 실습의 핵심 질문은 다음 세 가지다.
+- `H(x)`를 직접 근사하는 것과 `F(x)=H(x)-x`를 학습하는 것은 코드에서 어떻게 다른가?
+- shortcut은 실제 tensor 연산에서 무엇을 하는가?
+- 같은 조건에서 Plain CNN과 ResNet의 학습 양상이 실제로 어떻게 달라지는가?
+
+논문의 152-layer ImageNet 결과를 그대로 재현하는 것이 목표가 아니다. 작은 실험으로 residual learning의 데이터 흐름과 optimization 차이를 관찰하는 것이 목표다.
+
 ## 시각화 우선 원칙
 가능하면 다음 시각화를 포함한다.
 
