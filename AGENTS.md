@@ -9,7 +9,7 @@
 - 기존 `lessons/`의 MLP/CNN 실습은 보존한다.
 - 논문/모델 확장 실습은 `notebooks/` 아래에 단계별로 추가한다.
 - 한 실습은 하나의 핵심 질문을 가진다.
-- 완성 코드를 처음부터 한꺼번에 넣기보다, 사용자가 셀 단위로 직접 타이핑하고 실행할 수 있는 작은 단계로 나눈다.
+- 완성 코드를 처음부터 한꺼번에 넣기보다, 사용자가 작은 단위로 직접 타이핑하고 실행하도록 한다.
 - 각 단계에는 `왜 필요한가`, `입력/출력 shape은 무엇인가`, `무엇을 관찰해야 하는가`를 명확히 적는다.
 - accuracy만 기록하지 말고 tensor shape, activation, filter, feature map, attention, mask, error case 등 중간 결과를 적극적으로 시각화한다.
 - 비교 실험에서는 한 번에 한 조건만 바꾼다.
@@ -42,7 +42,7 @@
 13. 다음 실습으로의 연결
 
 ## 단계별 구현 규칙
-- 한 셀에서 너무 많은 개념을 동시에 구현하지 않는다.
+- 한 번에 너무 많은 개념을 동시에 구현하지 않는다.
 - 가능하면 `데이터 확인 → 작은 모듈 → 전체 모델 → 학습 → 분석` 순서로 확장한다.
 - 사용자가 직접 타이핑하는 단계에서는 boilerplate를 과도하게 늘리지 않는다.
 - 핵심 연산은 라이브러리 한 줄로 숨기기 전에 한 번은 직접 구현해보는 것을 우선한다.
@@ -51,18 +51,26 @@
 ## ResNet 논문 실습 진행 원칙
 현재 ResNet 실습은 `notebooks/03_resnet/`에서 진행한다. 완성 코드를 미리 채우지 않고 사용자가 직접 타이핑하는 방식을 유지한다.
 
+ResNet 초반의 구조/수치 검증 실습은 notebook 셀보다 순차 실행이 명확한 Python 파일을 우선한다. 이유는 notebook에서 셀 실행 순서가 바뀌면 이전 weight, tensor, model instance가 남아 비교 실험이 오염될 수 있기 때문이다. 시각화나 training curve 분석 단계에서는 notebook을 다시 사용해도 된다.
+
+권장 실행 형식:
+- `residual_block.py`: `x → F(x) → F(x)+x`와 plain/residual 비교를 처음부터 끝까지 순차 실행
+- `resnet18_cifar10.ipynb`: 데이터 시각화, 학습 curve, prediction/failure case 분석
+
 현재 진행 위치:
-- `residual_block.ipynb`
-- 1단계: 입력 tensor `x`의 shape / dtype / 값 범위를 확인한 뒤, 다음 셀부터 plain 2-layer block을 직접 타이핑한다.
+- residual block의 `x`, `F(x)`, `F(x)+x`를 직접 확인했고, plain/residual 비교 중 notebook의 실행 상태가 섞일 가능성을 확인했다.
+- 다음 단계부터 residual block 기초 실습은 Python 파일 단위로 처음부터 다시 정리한다.
 
 실습 순서는 다음과 같다.
 
-1. `residual_block.ipynb`
+1. `residual_block.py`
+   - seed 고정
    - 입력 `x`의 shape 확인
    - plain 2-layer block을 직접 구현
-   - residual branch `F(x)`를 직접 확인
-   - identity shortcut으로 `x`를 더해 `F(x) + x`를 구성
-   - `x`, `F(x)`, `F(x)+x`의 shape/value 통계 비교
+   - residual 2-layer block을 직접 구현
+   - 두 block의 convolution weight를 동일하게 맞춤
+   - `F(x)`와 `F(x)+x`를 직접 확인
+   - `residual_out - plain_out == x`를 검증
    - 필요하면 projection shortcut을 추가하고 dimension mismatch를 직접 확인
    - 마지막에 간단한 backward를 수행하여 gradient가 실제로 계산되는지 확인
 
