@@ -58,8 +58,9 @@ ResNet 초반의 구조/수치 검증 실습은 notebook 셀보다 순차 실행
 - `resnet18_cifar10.ipynb`: 데이터 시각화, 학습 curve, prediction/failure case 분석
 
 현재 진행 위치:
-- residual block의 `x`, `F(x)`, `F(x)+x`를 직접 확인했고, plain/residual 비교 중 notebook의 실행 상태가 섞일 가능성을 확인했다.
-- 다음 단계부터 residual block 기초 실습은 Python 파일 단위로 처음부터 다시 정리한다.
+- `notebooks/03_resnet/residual_block.py` starter scaffold를 생성했다.
+- 파일에는 Step 1만 실행 가능한 상태로 두고, PlainBlock / ResidualBlock / 비교 / projection shortcut / backward는 TODO로 남겨 사용자가 직접 타이핑한다.
+- 기존 `residual_block.ipynb`는 Python 파일로 이동했다는 안내만 남긴다.
 
 실습 순서는 다음과 같다.
 
