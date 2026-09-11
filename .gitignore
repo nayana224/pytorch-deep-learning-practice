@@ -12,3 +12,4 @@ external/
 checkpoints/
 *.pth
 *.pt
+.vscode/

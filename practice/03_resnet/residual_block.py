@@ -24,12 +24,85 @@ def main():
     print("x dtype:", x.dtype)
     print("x mean:", x.mean().item())
 
-    # TODO 1: PlainBlock 구현
-    # TODO 2: ResidualBlock 구현
-    # TODO 3: x, F(x), F(x)+x 확인
-    # TODO 4: weight를 같게 맞춘 뒤 plain/residual 비교
-    # TODO 5: projection shortcut 구현
-    # TODO 6: backward로 gradient 확인
+    # 1: PlainBlock 구현
+    class PlainBlock(nn.Module):
+        
+        def __init__(self):
+            super().__init__()
+
+            self.conv1 = nn.Conv2d(
+                in_channels=16,
+                out_channels=16,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
+            self.relu = nn.ReLU()
+
+            self.conv2 = nn.Conv2d(
+                in_channels=16,
+                out_channels=16,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
+        def forward(self, x):
+            out = self.conv1(x)
+            out = self.relu(out)
+            out = self.conv2(out)
+
+            return out
+        
+    plain_block = PlainBlock()
+    plain_out = plain_block(x)
+    
+    print("plain_out shape:", plain_out.shape)
+    
+    
+    # 2: ResidualBlock 구현
+    class ResidualBlock(nn.Module):
+        def __init__(self):
+            super().__init__()
+
+            self.conv1 = nn.Conv2d(
+                in_channels=16,
+                out_channels=16,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
+            self.relu = nn.ReLU()
+
+            self.conv2 = nn.Conv2d(
+                in_channels=16,
+                out_channels=16,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
+        def forward(self, x):
+            out = self.conv1(x)
+            out = self.relu(out)
+            out = self.conv2(out)
+
+            out = out + x
+
+            return out
+    
+    res_block = ResidualBlock()
+    res_out = res_block(x)
+    
+    print("res_out shape:", res_out.shape)
+       
+    
+    # 3: x, F(x), F(x)+x 확인
+    # 4: weight를 같게 맞춘 뒤 plain/residual 비교
+    # 5: projection shortcut 구현
+    # 6: backward로 gradient 확인
 
 
 if __name__ == "__main__":
