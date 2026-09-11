@@ -51,6 +51,10 @@
 ## ResNet 논문 실습 진행 원칙
 현재 ResNet 실습은 `notebooks/03_resnet/`에서 진행한다. 완성 코드를 미리 채우지 않고 사용자가 직접 타이핑하는 방식을 유지한다.
 
+현재 진행 위치:
+- `residual_block.ipynb`
+- 1단계: 입력 tensor `x`의 shape / dtype / 값 범위를 확인한 뒤, 다음 셀부터 plain 2-layer block을 직접 타이핑한다.
+
 실습 순서는 다음과 같다.
 
 1. `residual_block.ipynb`
