@@ -66,6 +66,8 @@ practice/
 - dataset helper: `scripts/download_isbi2012.sh`
 - local data 위치: `data/02_unet/isbi2012/` (`data/`는 gitignore)
 - training: 30장의 512x512 EM image + fully annotated segmentation map
+- 실제 배포 형식은 `train-volume.tif`, `train-labels.tif`처럼 여러 2D slice를 한 파일에 담은 multi-page TIFF stack이다. PNG 여러 장으로 미리 변환하지 않고 원본 TIFF stack을 먼저 그대로 읽어 shape `[N, H, W]`와 slice 대응 관계를 확인한다.
+- `challenge-error-metrics.bsh`는 이미지 데이터가 아니라 challenge 평가 지표 계산용 BeanShell 스크립트다.
 - dataset을 받은 뒤 실제 archive 파일명을 먼저 `find`로 확인하고 코드 경로를 정한다. 파일명을 미리 가정하지 않는다.
 - Figure 1 input tile 572x572와 dataset image 512x512를 구분
 - 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
