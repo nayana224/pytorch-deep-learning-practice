@@ -1,28 +1,40 @@
 # 04. U-Net 실습
 
-이 폴더의 목표는 U-Net 완성 코드를 복사하거나 TODO를 채우는 것이 아니라, **대화에서 받은 실제 코드를 사용자가 직접 타이핑하고 실행하면서 논문 구조를 이해하는 것**이다.
+이 폴더의 목표는 U-Net 완성 코드를 복사하는 것이 아니라, **논문에서 실제 사용한 데이터와 구조를 가능한 한 그대로 따라가며 PyTorch로 직접 타이핑하고 이해하는 것**이다.
 
 ## 학습 방식
 
-이 실습은 다음 순서를 반복한다.
+1. 논문이 사용한 데이터셋과 GT 구조를 먼저 확인한다.
+2. ChatGPT가 현재 단계에 필요한 작은 실제 코드를 제시한다.
+3. 사용자가 코드를 직접 타이핑한다.
+4. 실행 전에 tensor shape과 데이터 의미를 예상한다.
+5. 직접 실행하고 결과를 확인한다.
+6. 이해되지 않는 코드, shape 변화, 논문과의 대응을 질문한다.
+7. 이해가 끝나면 다음 코드 조각으로 넘어간다.
 
-1. ChatGPT가 작은 실행 단위의 실제 코드를 제시한다.
-2. 사용자가 코드를 직접 타이핑한다.
-3. 실행 전에 가능하면 tensor shape이나 동작을 예상한다.
-4. 실행 결과를 확인한다.
-5. 이해되지 않는 줄, shape 변화, 연산의 이유를 질문한다.
-6. 이해가 끝나면 다음 코드 조각으로 넘어간다.
+전체 완성 코드를 한 번에 받지 않는다.
 
-한 번에 전체 U-Net 코드를 받지 않는다. 최종적으로는 사용자가 직접 타이핑한 완성 코드가 파일에 남는다.
+## 1. 기준 데이터셋
 
-## 1. `unet_architecture.py`
+첫 번째 기준은 논문의 **ISBI 2012 EM segmentation challenge** 데이터다.
+
+논문에 따르면:
+- training image: 30장
+- image size: 512x512
+- serial section transmission electron microscopy 이미지
+- 각 training image에 fully annotated segmentation map이 존재
+- GT는 cell과 membrane 구조를 구분하는 segmentation map
+- test GT는 공개되지 않고 challenge server에서 평가
+- 논문 평가 지표는 warping error, Rand error, pixel error
+
+따라서 synthetic data는 기본 실습 경로에서 제외하고, 실제 EM image / GT mask를 먼저 다룬다. synthetic data는 데이터 로딩 문제와 모델 문제를 분리할 필요가 있을 때만 진단용으로 사용한다.
+
+## 2. `unet_architecture.py`
 
 논문 Figure 1의 original U-Net 구조를 PyTorch로 직접 따라간다.
 
-최종적으로 다룰 흐름은 다음과 같다.
-
 ```text
-input
+input tile
 → valid 3x3 convolution + ReLU
 → valid 3x3 convolution + ReLU
 → max pooling
@@ -36,53 +48,43 @@ input
 → segmentation logits
 ```
 
-첫 입력은 논문 Figure 1과 같은 `[1, 1, 572, 572]`에서 시작한다.
+논문 Figure 1에서는 572x572 input tile에서 시작해 388x388 output segmentation map을 만든다. 실제 dataset image 크기 512x512와 네트워크 input tile 크기는 같은 개념이 아니므로, 데이터 로딩과 tile 생성 과정을 따로 확인한다.
 
 핵심 관찰 항목:
-- `572 → 570 → 568`이 되는 이유
-- spatial size가 줄고 channel 수가 증가하는 흐름
-- pooling 전 encoder feature를 skip으로 저장하는 이유
-- upsampled decoder feature와 encoder feature의 spatial mismatch
-- valid convolution 때문에 crop이 필요한 이유
-- `torch.cat(..., dim=1)` 전후 channel 변화
-- ResNet의 addition과 U-Net의 concatenation 차이
-- 마지막 `1x1 Conv`가 pixel별 feature를 class logits로 바꾸는 과정
+- valid convolution에서 spatial size가 줄어드는 이유
+- encoder의 channel 증가와 resolution 감소
+- pooling 전 feature가 skip으로 전달되는 이유
+- upsampled feature와 encoder feature의 spatial mismatch
+- crop + concat의 실제 tensor shape
+- 마지막 1x1 convolution의 역할
 
-## 2. `segmentation.py`
+## 3. `segmentation.py`
 
-네트워크 구조를 이해한 뒤 실제 segmentation 학습 데이터 흐름을 연결한다.
-
-최종적으로 확인할 흐름:
+논문 데이터로 학습 데이터 흐름을 추적한다.
 
 ```text
-raw image / GT mask
+EM raw image / GT segmentation
+→ tile / preprocessing / augmentation
 → Dataset / DataLoader
 → U-Net
 → logits
-→ loss
-→ backward / optimizer step
-→ probability / prediction
-→ IoU / Dice
-→ failure case visualization
+→ pixel-wise loss
+→ backward / optimizer
+→ prediction
+→ evaluation / visualization
 ```
 
-처음에는 synthetic binary segmentation을 사용한다. pipeline이 검증된 뒤 실제 biomedical dataset, elastic deformation, touching-cell weighted loss 등을 한 번에 하나씩 추가한다.
+먼저 image / GT의 실제 파일 구조, shape, dtype, value range를 확인한다. 그 다음 논문 기본 학습 흐름을 연결하고, weighted loss와 elastic deformation은 별도 단계로 추가한다.
 
-## 논문과 연결해서 계속 질문할 것
+## 논문 재현과 학습 실습의 구분
 
-- contracting path는 무엇을 잃고 무엇을 얻는가?
-- expansive path만으로 localization을 충분히 복원하기 어려운 이유는 무엇인가?
-- encoder의 high-resolution feature가 decoder에 어떤 정보를 보완하는가?
-- original U-Net에서 valid convolution과 crop은 어떻게 연결되는가?
-- 마지막 `1x1 Conv`는 각 pixel에서 정확히 무엇을 계산하는가?
+가능한 한 논문 설정을 그대로 사용하지만, 논문에 충분히 명시되지 않은 부분이나 현재 환경에서 그대로 재현하기 어려운 부분은 임의로 숨기지 않는다. 무엇을 그대로 따랐고 무엇을 단순화했는지 기록한다.
 
 ## 완료 기준
 
-다음 내용을 자신의 말로 설명하고 최소 한 번 직접 실행해 확인할 수 있으면 기본 U-Net 실습을 완료한 것으로 본다.
-
 1. Problem: sliding-window CNN의 비효율과 localization/context trade-off
 2. Core idea: contracting path + expanding path + skip feature
-3. Method: downsampling / upsampling / crop / concat / 1x1 convolution
-4. Input / GT / Output / Loss: image → logits, mask → loss의 흐름
-5. Evidence: IoU / Dice 및 prediction 결과
-6. My observation: encoder/decoder feature와 failure case에서 직접 본 현상
+3. Method: valid conv / downsampling / upsampling / crop / concat / 1x1 conv
+4. Input / GT / Output / Loss: 실제 EM image와 GT가 model/loss까지 흐르는 과정
+5. Evidence: 논문 지표와 prediction 결과가 저자 주장과 어떻게 연결되는지
+6. My observation: feature / prediction / failure case에서 직접 본 현상
