@@ -51,6 +51,7 @@ practice/
 │   ├── residual_block.py
 │   └── resnet18_cifar10.py
 ├── 04_unet/
+│   ├── README.md
 │   ├── unet_architecture.py
 │   └── segmentation.py
 ├── 05_attention/
@@ -105,6 +106,49 @@ ResNet 실습의 핵심 질문은 다음 세 가지다.
 - 같은 조건에서 Plain CNN과 ResNet의 학습 양상이 실제로 어떻게 달라지는가?
 
 논문의 152-layer ImageNet 결과를 그대로 재현하는 것이 목표가 아니다. 작은 실험으로 residual learning의 데이터 흐름과 optimization 차이를 관찰하는 것이 목표다.
+
+## U-Net 논문 실습 진행 원칙
+현재 U-Net 실습은 `practice/04_unet/`에서 진행한다.
+
+U-Net은 완성 코드를 한 번에 작성하지 않고 `shape 예측 → 작은 블록 구현 → 실행 결과 확인 → 다음 블록` 순서로 진행한다. 첫 목표는 논문 Figure 1의 tensor 흐름을 PyTorch 연산으로 직접 확인하는 것이다.
+
+현재 파일:
+- `README.md`: 실습 순서, 핵심 질문, 완료 기준
+- `unet_architecture.py`: valid convolution, contracting path, up-convolution, crop, concat, decoder, 1x1 convolution
+- `segmentation.py`: synthetic image/mask, Dataset/DataLoader, logits/loss/backward, overfit sanity check, IoU/Dice, failure case
+
+실습 순서는 다음과 같다.
+
+1. `unet_architecture.py`
+   - 입력 `[1, 1, 572, 572]`에서 시작
+   - `DoubleConv` 하나를 직접 구현하고 `572 → 570 → 568` spatial 변화 확인
+   - pooling 전 feature를 skip용으로 저장하고 pooling 후 feature와 비교
+   - encoder channel 흐름과 spatial size 변화를 단계별로 기록
+   - `ConvTranspose2d`로 decoder upsampling을 먼저 단독 확인
+   - encoder/decoder spatial mismatch를 확인한 뒤 center crop 구현
+   - `torch.cat(..., dim=1)` 전/후 channel 수 확인
+   - decoder block과 마지막 `1x1 Conv` 연결
+
+2. `segmentation.py`
+   - 실제 dataset보다 먼저 synthetic binary segmentation으로 pipeline 검증
+   - image / GT mask의 shape, dtype, range 확인
+   - U-Net logits와 GT spatial size 확인
+   - `BCEWithLogitsLoss`로 한 번의 forward/backward 연결
+   - 전체 학습 전에 1~4개 sample에 overfit하는 sanity check 수행
+   - 전체 synthetic dataset에서 train/validation loss 기록
+   - sigmoid + threshold로 prediction 생성
+   - IoU / Dice를 tensor 연산으로 직접 계산
+   - 낮은 IoU sample의 input / GT / prediction / error map을 관찰
+
+U-Net 실습의 핵심 질문은 다음과 같다.
+- contracting path는 spatial detail을 줄이면서 어떤 context를 얻는가?
+- decoder만으로 localization을 충분히 복원하기 어려운 이유는 무엇인가?
+- encoder high-resolution feature를 skip connection으로 전달하면 무엇이 보완되는가?
+- ResNet의 element-wise addition과 U-Net의 channel-wise concatenation은 어떻게 다른가?
+- original U-Net에서 valid convolution을 사용할 때 crop이 왜 필요한가?
+- 마지막 `1x1 Conv`는 각 pixel의 feature vector를 무엇으로 바꾸는가?
+
+기본 pipeline이 검증되기 전에는 elastic deformation, touching-cell weighted loss, 실제 biomedical dataset, modern padding U-Net 변형을 동시에 추가하지 않는다. 이후 확장 실험은 한 번에 하나의 조건만 바꾼다.
 
 ## 시각화 우선 원칙
 가능하면 다음 시각화를 포함한다.
