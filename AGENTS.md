@@ -76,8 +76,9 @@ practice/
 - `01_data.py` 첫 단계에서는 train image/label stack의 shape, dtype, min/max, label unique value를 확인하고, 같은 index의 image/GT를 `matplotlib`로 나란히 시각화한다.
 - label 값이 `[0, 255]`처럼 binary로 보이더라도 어느 값이 membrane/cell interior인지 미리 단정하지 않고 image와 GT를 확대/overlay하여 시각적으로 먼저 검증한다.
 - 현재 관찰상 `0`은 membrane/boundary, `255`는 cell interior로 해석한다.
-- 다음 단계에서는 raw `uint8` image/label을 PyTorch 학습 입력으로 바꾸는 과정을 직접 확인한다: image는 `float32` 및 0~1 스케일로 변환하고 channel 축을 추가하며, GT는 논문 class 의미를 유지하면서 학습용 class/tensor 형태로 변환한다.
+- raw `uint8` image/label을 PyTorch 학습 입력으로 바꾸는 과정을 직접 확인한다: image는 `float32` 및 0~1 스케일로 변환하고 channel 축을 추가하며, GT는 논문 class 의미를 유지하면서 학습용 class/tensor 형태로 변환한다.
 - 변환 전후에 반드시 shape, dtype, value range, unique value를 출력해 확인한다.
+- 다음 단계는 실제 U-Net을 만들기 전에 dummy batch와 dummy logits를 만들어 `Input [B,1,H,W]`, `GT [B,H,W]`, `logits [B,2,H,W]`가 `CrossEntropyLoss`에서 연결되는지 직접 검증한다.
 - Figure 1 input tile 572x572와 dataset image 512x512를 구분
 - 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
 - 이후 weighted loss, elastic deformation, overlap-tile을 논문 순서로 추가
