@@ -1,27 +1,47 @@
 # AGENTS.md
 
 ## 프로젝트 목적
-이 저장소는 PyTorch 딥러닝 학습용 실습 저장소다. 코드 완성보다 각 모델이 왜 필요한지, 데이터가 어떤 shape으로 흐르는지, 무엇을 관찰해야 하는지 이해하는 것을 우선한다.
+이 저장소는 PyTorch 딥러닝 학습용 실습 저장소다. 코드 완성 자체보다 각 모델이 왜 필요한지, 데이터가 어떤 shape으로 흐르는지, 무엇을 관찰해야 하는지 이해하는 것을 우선한다.
 
-사용자가 직접 코드를 한 단계씩 타이핑하며 공부하는 것이 핵심 목표다. AI/Codex는 사용자의 사고와 구현 연습을 대체하기보다, 실습의 순서와 관찰 포인트를 설계하는 역할을 우선한다.
+사용자가 직접 코드를 타이핑하며 공부하는 것이 핵심 목표다. AI/Codex는 대리 구현자가 아니라 실습 설계자, 코드 리뷰어, 디버깅 파트너 역할을 우선한다.
 
 ## 작업 원칙
-- 기존 `lessons/`의 MLP/CNN 기초 실습은 보존한다.
-- 논문/모델 확장 실습은 `practice/` 아래에 단계별로 추가한다.
+- 기존 `lessons/`의 기초 실습은 보존한다.
+- 논문/모델 확장 실습은 `practice/` 아래에 둔다.
 - 저장소에서 직접 만드는 학습 실습은 기본적으로 `.py` 파일을 사용한다.
-- 완성 코드를 처음부터 한꺼번에 넣기보다, 사용자가 작은 단위로 직접 타이핑하고 실행하도록 한다.
-- 각 단계에는 `왜 필요한가`, `입력/출력 shape은 무엇인가`, `무엇을 관찰해야 하는가`를 명확히 적는다.
-- accuracy만 기록하지 말고 tensor shape, activation, filter, feature map, attention, mask, error case 등 중간 결과를 적극적으로 시각화한다.
+- 새 작업을 할 때마다 README와 본 파일이 현재 학습 방식과 일치하는지 확인하고 필요한 경우 함께 업데이트한다.
+- 정확도만 보지 않고 tensor shape, activation, feature map, mask, attention, prediction, error case 등 중간 결과를 적극적으로 관찰한다.
 - 비교 실험에서는 한 번에 한 조건만 바꾼다.
-- 결과를 보기 전에 가능한 경우 예상/가설을 먼저 적고, 실제 결과와 비교한다.
-- 큰 foundation model(SAM/SAM2)은 처음부터 재구현하지 않고 공식 pretrained 모델을 사용한 inference와 내부 구조 분석을 우선한다.
-- MLP, CNN, ResNet, U-Net, Attention, Transformer, ViT는 가능한 한 작은 형태를 직접 구현해 구조를 이해한다.
-- 새 작업을 진행할 때 README와 본 파일의 범위/원칙이 현재 저장소 상태와 일치하는지 함께 확인한다.
+- 결과를 보기 전에 가능한 경우 예상/가설을 먼저 적고 실제 결과와 비교한다.
+- 큰 foundation model(SAM/SAM2)은 처음부터 재구현하지 않고 공식 pretrained 모델 inference와 내부 구조 분석을 우선한다.
+- MLP, CNN, ResNet, U-Net, Attention, Transformer, ViT는 가능한 한 작은 형태를 직접 구현하며 구조를 이해한다.
+
+## 직접 타이핑 실습 방식
+`practice/`의 기본 학습 방식은 TODO 빈칸 채우기가 아니다.
+
+다음 사이클을 반복한다.
+
+1. AI가 현재 단계에 필요한 **작은 실행 단위의 실제 코드**를 대화에서 제시한다.
+2. 사용자가 그 코드를 직접 `.py` 파일에 타이핑한다.
+3. 실행 전에 가능하면 tensor shape, 출력 의미, 변화 방향을 예상한다.
+4. 사용자가 직접 실행한다.
+5. 실행 결과와 이해되지 않는 줄을 바탕으로 질문한다.
+6. AI가 결과를 해석하고 코드의 이유, failure mode, 다음 관찰 지점을 설명한다.
+7. 이해가 끝나면 다음 작은 코드 조각으로 넘어간다.
+
+원칙:
+- 전체 완성 코드를 한 번에 던지지 않는다.
+- 반대로 TODO만 남겨 사용자가 API 이름이나 문법을 추측하게 만들지도 않는다.
+- 학습 핵심 연산은 실제 코드로 보여주되, 사용자가 직접 타이핑한다.
+- 최종 파일에는 사용자가 단계적으로 직접 작성한 완성 코드가 남도록 한다.
+- 질문이 생기면 다음 구현으로 넘어가기 전에 현재 데이터 흐름을 먼저 이해한다.
+- 이미 충분히 이해한 boilerplate는 반복 설명하지 않는다.
 
 ## 공개/공식 코드 예외
-- 외부 공개 저장소에서 가져온 공식 코드가 `.ipynb`로 제공되는 경우에는 형식만 바꾸기 위해 임의로 `.py`로 변환하지 않는다.
-- 공식 notebook은 원본 구조를 보존하고, 필요하면 별도의 우리 실습 `.py` 파일에서 핵심 동작을 다시 구현하거나 호출한다.
-- `external/` 등 외부 소스 디렉터리는 학습용 편의 때문에 원본 파일을 임의 수정하지 않는다.
+- 외부 공식 구현이 있으면 먼저 언어, 프레임워크, 파일 구조, 논문과의 대응 관계를 확인한다.
+- 공식 코드가 현재 학습 프레임워크와 다르면 원본을 보존하고 핵심 구조를 현재 프레임워크로 다시 구현해본다.
+- 외부 공개 저장소의 `.ipynb`는 형식만 바꾸기 위해 임의로 `.py`로 변환하지 않는다.
+- `external/` 등 외부 소스 디렉터리는 학습 편의를 위해 원본 코드를 임의 수정하지 않는다.
 
 ## 디렉터리 정책
 - `lessons/`: 기존 Python script 기반 기초 실습
@@ -29,14 +49,6 @@
 - `outputs/`: 실행 결과 이미지/모델/로그
 - `scripts/`: 환경 설정과 점검 스크립트
 - `external/`: 필요할 때 clone되는 공식/외부 소스. 원본 구조 보존
-
-## 단계별 구현 규칙
-- 한 번에 너무 많은 개념을 동시에 구현하지 않는다.
-- 가능하면 `데이터 확인 → 작은 모듈 → 전체 모델 → 학습 → 분석` 순서로 확장한다.
-- 사용자가 직접 타이핑하는 단계에서는 boilerplate를 과도하게 늘리지 않는다.
-- 핵심 연산은 라이브러리 한 줄로 숨기기 전에 한 번은 직접 구현해보는 것을 우선한다.
-- 직접 구현 후 공식 구현이나 `torchvision` 구현과 비교하는 것은 권장한다.
-- 상태가 누적되는 notebook보다 위에서 아래로 한 번 실행되는 `.py`를 기본으로 사용하여 비교 실험의 재현성을 높인다.
 
 ## 현재 논문/모델 실습 구조
 
@@ -70,146 +82,87 @@ practice/
     └── sam2_video.py
 ```
 
-## ResNet 논문 실습 진행 원칙
-현재 ResNet 실습은 `practice/03_resnet/`에서 진행한다.
-
-모든 실습은 위에서 아래로 실행되는 `.py` 파일로 진행한다. 파일에는 완성 구현을 넣지 않고, 사용자가 직접 타이핑할 수 있도록 설명과 단계별 TODO만 제공한다.
-
-현재 파일:
-- `residual_block.py`: `x → F(x) → F(x)+x`, plain/residual 비교, projection shortcut, backward 기초
-- `resnet18_cifar10.py`: CIFAR-10 데이터 흐름, BasicBlock, 작은 Plain CNN/ResNet, 학습/평가 비교
-
-실습 순서는 다음과 같다.
-
-1. `residual_block.py`
-   - seed 고정
-   - 입력 `x`의 shape 확인
-   - plain 2-layer block을 직접 구현
-   - residual 2-layer block을 직접 구현
-   - 두 block의 convolution weight를 동일하게 맞춤
-   - `F(x)`와 `F(x)+x`를 직접 확인
-   - `residual_out - plain_out ≈ x`를 검증
-   - projection shortcut으로 dimension mismatch를 해결
-   - 간단한 backward를 수행하여 gradient가 실제로 계산되는지 확인
-
-2. `resnet18_cifar10.py`
-   - CIFAR-10 input / GT / output / loss 흐름 확인
-   - 직접 만든 `BasicBlock`으로 작은 Plain CNN과 작은 ResNet 구성
-   - seed, optimizer, epoch, batch size 등 비교 조건을 통제
-   - Plain CNN vs ResNet의 training loss / accuracy 비교
-   - prediction 및 failure case 확인
-   - 필요하면 결과 시각화를 별도 이미지 파일로 저장
-
-ResNet 실습의 핵심 질문은 다음 세 가지다.
-- `H(x)`를 직접 근사하는 것과 `F(x)=H(x)-x`를 학습하는 것은 코드에서 어떻게 다른가?
-- shortcut은 실제 tensor 연산에서 무엇을 하는가?
-- 같은 조건에서 Plain CNN과 ResNet의 학습 양상이 실제로 어떻게 달라지는가?
-
-논문의 152-layer ImageNet 결과를 그대로 재현하는 것이 목표가 아니다. 작은 실험으로 residual learning의 데이터 흐름과 optimization 차이를 관찰하는 것이 목표다.
+기존 ResNet 파일은 학습 이력을 보존한다. 새로운 방식으로 전환하기 위해 과거 코드를 불필요하게 초기화하지 않는다. 이후 실습부터 작은 실제 코드 제시 → 직접 타이핑 → 실행 → 질문 방식으로 진행한다.
 
 ## U-Net 논문 실습 진행 원칙
-현재 U-Net 실습은 `practice/04_unet/`에서 진행한다.
+현재 U-Net 실습은 `practice/04_unet/`에서 진행하며 새로운 직접 타이핑 방식을 우선 적용한다.
 
-U-Net은 완성 코드를 한 번에 작성하지 않고 `shape 예측 → 작은 블록 구현 → 실행 결과 확인 → 다음 블록` 순서로 진행한다. 첫 목표는 논문 Figure 1의 tensor 흐름을 PyTorch 연산으로 직접 확인하는 것이다.
+### `unet_architecture.py`
+논문 Figure 1의 original U-Net tensor 흐름을 PyTorch로 직접 재구성한다.
 
-현재 파일:
-- `README.md`: 실습 순서, 핵심 질문, 완료 기준
-- `unet_architecture.py`: valid convolution, contracting path, up-convolution, crop, concat, decoder, 1x1 convolution
-- `segmentation.py`: synthetic image/mask, Dataset/DataLoader, logits/loss/backward, overfit sanity check, IoU/Dice, failure case
+진행 순서:
+- 입력 `[1, 1, 572, 572]`
+- valid `3x3 Conv + ReLU` 두 번
+- max pooling
+- contracting path
+- bottleneck
+- up-convolution
+- encoder feature center crop
+- channel-wise concatenation
+- expanding path
+- 마지막 `1x1 Conv`
+- segmentation logits
 
-실습 순서는 다음과 같다.
+각 단계에서 실제 코드가 대화로 제공되며 사용자가 직접 타이핑한다. 특히 `572 → 570 → 568`, pooling 전후 shape, skip feature, crop 전후 shape, concat 전후 channel 수를 직접 출력해 확인한다.
 
-1. `unet_architecture.py`
-   - 입력 `[1, 1, 572, 572]`에서 시작
-   - `DoubleConv` 하나를 직접 구현하고 `572 → 570 → 568` spatial 변화 확인
-   - pooling 전 feature를 skip용으로 저장하고 pooling 후 feature와 비교
-   - encoder channel 흐름과 spatial size 변화를 단계별로 기록
-   - `ConvTranspose2d`로 decoder upsampling을 먼저 단독 확인
-   - encoder/decoder spatial mismatch를 확인한 뒤 center crop 구현
-   - `torch.cat(..., dim=1)` 전/후 channel 수 확인
-   - decoder block과 마지막 `1x1 Conv` 연결
+### `segmentation.py`
+구조를 이해한 뒤 데이터 흐름을 연결한다.
 
-2. `segmentation.py`
-   - 실제 dataset보다 먼저 synthetic binary segmentation으로 pipeline 검증
-   - image / GT mask의 shape, dtype, range 확인
-   - U-Net logits와 GT spatial size 확인
-   - `BCEWithLogitsLoss`로 한 번의 forward/backward 연결
-   - 전체 학습 전에 1~4개 sample에 overfit하는 sanity check 수행
-   - 전체 synthetic dataset에서 train/validation loss 기록
-   - sigmoid + threshold로 prediction 생성
-   - IoU / Dice를 tensor 연산으로 직접 계산
-   - 낮은 IoU sample의 input / GT / prediction / error map을 관찰
+진행 순서:
+- synthetic image / GT mask
+- Dataset / DataLoader
+- model logits
+- loss
+- backward / optimizer step
+- 작은 sample overfit sanity check
+- probability / binary prediction
+- IoU / Dice
+- prediction / error map / failure case
 
-U-Net 실습의 핵심 질문은 다음과 같다.
+기본 pipeline을 이해하기 전에는 elastic deformation, touching-cell weighted loss, 실제 biomedical dataset, modern padding U-Net 변형을 동시에 추가하지 않는다. 이후 한 번에 하나씩 확장한다.
+
+U-Net의 핵심 질문:
 - contracting path는 spatial detail을 줄이면서 어떤 context를 얻는가?
 - decoder만으로 localization을 충분히 복원하기 어려운 이유는 무엇인가?
-- encoder high-resolution feature를 skip connection으로 전달하면 무엇이 보완되는가?
+- encoder high-resolution feature가 무엇을 보완하는가?
 - ResNet의 element-wise addition과 U-Net의 channel-wise concatenation은 어떻게 다른가?
-- original U-Net에서 valid convolution을 사용할 때 crop이 왜 필요한가?
+- original U-Net에서 valid convolution 때문에 crop이 왜 필요한가?
 - 마지막 `1x1 Conv`는 각 pixel의 feature vector를 무엇으로 바꾸는가?
 
-기본 pipeline이 검증되기 전에는 elastic deformation, touching-cell weighted loss, 실제 biomedical dataset, modern padding U-Net 변형을 동시에 추가하지 않는다. 이후 확장 실험은 한 번에 하나의 조건만 바꾼다.
-
 ## 시각화 우선 원칙
-가능하면 다음 시각화를 포함한다.
+가능하면 다음을 확인한다.
 
 ### 공통
 - input sample
 - tensor shape 흐름
 - training / validation loss
-- accuracy 또는 task metric
+- task metric
 - prediction 예시
 - failure case
 
-### MLP
-- 입력 이미지와 flatten 결과
-- 첫 layer weight를 이미지 형태로 재배치
-- confusion matrix
+### CNN / ResNet / U-Net
+- convolution filter 또는 feature map
+- layer/stage별 activation 또는 shape
+- ResNet: `F(x)`, `x`, `F(x)+x`
+- U-Net: input, GT mask, predicted mask, overlay, error map, encoder/decoder feature
 
-### CNN
-- convolution kernel/filter
-- training 전/후 feature map
-- layer별 activation
-- receptive field를 이해할 수 있는 예시
-
-### ResNet
-- residual block 내부 shape
-- `F(x)`와 `x`, `F(x)+x` 비교
-- Plain CNN vs ResNet training curve
-- 가능하면 gradient norm 또는 activation 분포 비교
-
-### U-Net
-- input image
-- ground-truth mask
-- predicted mask
-- prediction overlay
-- error map
-- encoder/decoder feature map 일부
-
-### Attention / Transformer
+### Attention / Transformer / ViT
 - Q, K, V shape
-- attention score matrix
-- softmax 전/후 값
+- attention score / softmax
 - attention heatmap
-- head별 attention 차이
-
-### ViT
-- 원본 이미지의 patch 분할
-- patch embedding 전/후 shape
-- positional embedding 적용 전/후
-- attention map
+- ViT patch 분할과 embedding shape
+- positional embedding 전후
 
 ### SAM / SAM2
-- 입력 이미지/프레임
 - point / box prompt
 - predicted mask overlay
-- prompt 변화에 따른 mask 비교
-- SAM2에서는 frame별 propagation 결과와 memory 효과를 관찰할 수 있는 예시
+- prompt 변화에 따른 mask 차이
+- SAM2 frame propagation과 memory 효과
 
 ## 출력 저장 규칙
-- 생성 결과는 `outputs/` 아래 모델/실습별 폴더에 저장한다.
-- 중요한 결과는 파일로도 저장한다.
-- 파일명은 무엇을 보여주는지 알 수 있게 작성한다.
+- 결과는 `outputs/` 아래 모델별 폴더에 저장한다.
+- 중요한 결과는 재현 가능한 파일로 남긴다.
+- 파일명만 보고 무엇을 보여주는지 알 수 있게 작성한다.
 
 예:
 - `outputs/03_resnet/plain_vs_resnet_loss.png`
@@ -217,27 +170,14 @@ U-Net 실습의 핵심 질문은 다음과 같다.
 - `outputs/05_attention/attention_heatmap.png`
 - `outputs/07_vit/image_patches.png`
 
-## 구현 우선순위
-직접 구현:
-- MLP
-- CNN
-- ResNet
-- U-Net
-- Attention
-- Transformer
-- ViT
-
-공식 코드 사용 + 내부 분석:
-- SAM
-- SAM2
-
 ## 학습 결과 리뷰 원칙
-- 실습 결과를 리뷰할 때는 `확인한 사실`과 `아직 검증하지 않은 가설/의문`을 분리한다.
-- 데이터 파이프라인은 가능한 한 `raw data → transform → tensor → batch → model input` 순서로 추적하고, 각 단계의 shape, dtype, 수치 범위와 의미를 확인한다.
-- `ToTensor()`의 0~1 스케일 변환, 입력 데이터의 normalization/standardization, 모델 내부의 BatchNorm/LayerNorm을 서로 다른 개념으로 구분한다.
-- 단일 실행의 accuracy 차이만으로 모델의 일반적 우수성을 결론내리지 않는다. 비교 목적이면 seed, 데이터 순서, epoch, optimizer 등 통제 조건을 기록한다.
-- 실제 연구 데이터로 확장하기 전에는 RGB/RGB-D의 채널 의미, 단위, invalid 값, 센서 정렬, 좌표계, normalization 기준, augmentation의 물리적 타당성을 별도 검증 대상으로 둔다.
-- 전처리 비교 실험은 한 번에 하나의 조건만 바꾸고, 입력 분포와 학습/검증 결과 변화를 함께 기록한다.
+- `확인한 사실`과 `아직 검증하지 않은 가설`을 분리한다.
+- 데이터는 가능하면 `raw data → transform → tensor → batch → model input` 순서로 추적한다.
+- 각 단계의 shape, dtype, 수치 범위, 의미를 확인한다.
+- `ToTensor()` 스케일 변환, 입력 normalization/standardization, 모델 내부 BatchNorm/LayerNorm을 서로 다른 개념으로 구분한다.
+- 단일 실행의 accuracy 차이만으로 모델의 일반적 우수성을 결론내리지 않는다.
+- 비교 목적이면 seed, 데이터 순서, epoch, optimizer 등 통제 조건을 기록한다.
+- 실제 연구 데이터로 확장하기 전에는 RGB/RGB-D 채널 의미, 단위, invalid 값, 센서 정렬, 좌표계, normalization 기준, augmentation의 물리적 타당성을 별도로 검증한다.
 
 ## Custom Food와의 연결
 후반 실습은 `custom_food_target_mass_ws`의 perception 문제와 연결할 수 있도록 설계한다.
@@ -246,7 +186,7 @@ U-Net 실습의 핵심 질문은 다음과 같다.
 - U-Net 기반 food segmentation
 - 기존 food mask와 SAM mask 비교
 - RGB / Depth / mask 동시 시각화
-- tray wall, sauce, reflection, depth invalid region 등의 failure case 기록
+- tray wall, sauce, reflection, depth invalid region failure case 기록
 - 향후 graspable mask 또는 graspability map 학습 가능성 분석
 
-단, foundation model을 프로젝트에 넣는 것 자체를 목표로 하지 않는다. 기존 pipeline에서 어떤 문제가 있고, 새 모델이 그 문제를 실제로 개선하는지 실험으로 검증한 뒤 적용 여부를 결정한다.
+foundation model을 프로젝트에 넣는 것 자체가 목표는 아니다. 기존 pipeline의 실제 문제와 새 모델의 개선 여부를 실험으로 검증한 뒤 적용 여부를 결정한다.
