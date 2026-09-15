@@ -9,7 +9,7 @@
 - `lessons/`: MLP, CNN, Attention, Transformer 등 일반 딥러닝 기초와 문법 실습
 - `practice/`: 논문 단위 실습
 - `outputs/`: 실행 결과 이미지/모델/로그
-- `scripts/`: 환경 설정과 점검 스크립트
+- `scripts/`: 환경 설정, 데이터 획득, 점검 스크립트
 - `external/`: 필요할 때 clone되는 공식/외부 소스. 원본 구조 보존
 
 ## practice 공통 원칙
@@ -32,7 +32,7 @@
 4. 사용자가 직접 실행한다.
 5. 실행 결과와 이해되지 않는 줄을 질문한다.
 6. AI가 결과를 해석하고 코드의 이유, failure mode, 다음 관찰 지점을 설명한다.
-7. 이해가 끝나면 다음 코드 조각으로 넘어간다.
+7. 이해가 끝나면 다음 작은 코드 조각으로 넘어간다.
 
 원칙:
 - 전체 완성 코드를 처음부터 한 번에 던지지 않는다.
@@ -61,7 +61,12 @@ practice/
 ### 02_unet
 - 논문: U-Net: Convolutional Networks for Biomedical Image Segmentation
 - 우선 데이터: ISBI 2012 EM segmentation challenge
+- 공식 설명 페이지: `https://imagej.net/events/isbi-2012-segmentation-challenge`
+- 현재 archive: `https://downloads.imagej.net/ISBI-2012-challenge.zip`
+- dataset helper: `scripts/download_isbi2012.sh`
+- local data 위치: `data/02_unet/isbi2012/` (`data/`는 gitignore)
 - training: 30장의 512x512 EM image + fully annotated segmentation map
+- dataset을 받은 뒤 실제 archive 파일명을 먼저 `find`로 확인하고 코드 경로를 정한다. 파일명을 미리 가정하지 않는다.
 - Figure 1 input tile 572x572와 dataset image 512x512를 구분
 - 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
 - 이후 weighted loss, elastic deformation, overlap-tile을 논문 순서로 추가
