@@ -70,6 +70,7 @@ practice/
 - 현재 확인된 파일: `train-volume.tif`, `train-labels.tif`, `test-volume.tif`, `test-labels.tif`, `challenge-error-metrics.bsh`
 - TIFF는 PNG로 변환하지 않고 multi-page stack 그대로 먼저 읽는다.
 - `01_data.py` 첫 단계에서는 train image/label stack의 shape, dtype, min/max, label unique value를 확인하고, 같은 index의 image/GT를 `matplotlib`로 나란히 시각화한다.
+- label 값이 `[0, 255]`처럼 binary로 보이더라도 어느 값이 membrane/cell interior인지 미리 단정하지 않고 image와 GT를 확대/overlay하여 시각적으로 먼저 검증한다.
 - Figure 1 input tile 572x572와 dataset image 512x512를 구분
 - 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
 - 이후 weighted loss, elastic deformation, overlap-tile을 논문 순서로 추가
