@@ -1,66 +1,84 @@
 # 04. U-Net 실습
 
-이 폴더의 목표는 U-Net 완성 코드를 복사하는 것이 아니라, 논문에서 본 구조를 PyTorch tensor 연산으로 직접 확인하는 것이다.
+이 폴더의 목표는 U-Net 완성 코드를 복사하거나 TODO를 채우는 것이 아니라, **대화에서 받은 실제 코드를 사용자가 직접 타이핑하고 실행하면서 논문 구조를 이해하는 것**이다.
 
-## 실습 순서
+## 학습 방식
 
-### 1. `unet_architecture.py`
-네트워크 구조만 다룬다.
+이 실습은 다음 순서를 반복한다.
 
-진행 순서:
-1. 입력 tensor shape 확인
-2. `DoubleConv` 직접 구현
-3. max pooling으로 encoder 한 단계 확인
-4. contracting path 확장
-5. `ConvTranspose2d`로 up-convolution 확인
-6. encoder feature center crop
-7. `torch.cat(..., dim=1)`로 skip feature 결합
-8. decoder block 연결
-9. 마지막 `1x1 Conv`로 segmentation logits 생성
+1. ChatGPT가 작은 실행 단위의 실제 코드를 제시한다.
+2. 사용자가 코드를 직접 타이핑한다.
+3. 실행 전에 가능하면 tensor shape이나 동작을 예상한다.
+4. 실행 결과를 확인한다.
+5. 이해되지 않는 줄, shape 변화, 연산의 이유를 질문한다.
+6. 이해가 끝나면 다음 코드 조각으로 넘어간다.
 
-각 단계에서 **코드를 쓰기 전에 예상 shape을 먼저 적고**, 실행 결과와 비교한다.
+한 번에 전체 U-Net 코드를 받지 않는다. 최종적으로는 사용자가 직접 타이핑한 완성 코드가 파일에 남는다.
 
-첫 시작점은 `DoubleConv` 하나다. 전체 U-Net을 한 번에 구현하지 않는다.
+## 1. `unet_architecture.py`
+
+논문 Figure 1의 original U-Net 구조를 PyTorch로 직접 따라간다.
+
+최종적으로 다룰 흐름은 다음과 같다.
+
+```text
+input
+→ valid 3x3 convolution + ReLU
+→ valid 3x3 convolution + ReLU
+→ max pooling
+→ contracting path
+→ bottleneck
+→ up-convolution
+→ encoder feature crop
+→ concatenation
+→ expanding path
+→ 1x1 convolution
+→ segmentation logits
+```
+
+첫 입력은 논문 Figure 1과 같은 `[1, 1, 572, 572]`에서 시작한다.
+
+핵심 관찰 항목:
+- `572 → 570 → 568`이 되는 이유
+- spatial size가 줄고 channel 수가 증가하는 흐름
+- pooling 전 encoder feature를 skip으로 저장하는 이유
+- upsampled decoder feature와 encoder feature의 spatial mismatch
+- valid convolution 때문에 crop이 필요한 이유
+- `torch.cat(..., dim=1)` 전후 channel 변화
+- ResNet의 addition과 U-Net의 concatenation 차이
+- 마지막 `1x1 Conv`가 pixel별 feature를 class logits로 바꾸는 과정
 
 ## 2. `segmentation.py`
-구조를 실제 segmentation 학습 흐름과 연결한다.
 
-진행 순서:
-1. synthetic image / GT mask 생성
-2. `Dataset` / `DataLoader`에서 batch shape 확인
-3. U-Net forward와 logits shape 확인
-4. `BCEWithLogitsLoss` 연결
-5. 한 번의 backward 확인
-6. 1~4개 sample에 overfit하는 최소 검증 실험
-7. 전체 synthetic dataset 학습
-8. sigmoid + threshold로 prediction 생성
-9. IoU / Dice 직접 계산
-10. 낮은 IoU의 failure case 관찰
+네트워크 구조를 이해한 뒤 실제 segmentation 학습 데이터 흐름을 연결한다.
 
-## 논문과 연결해서 볼 질문
+최종적으로 확인할 흐름:
+
+```text
+raw image / GT mask
+→ Dataset / DataLoader
+→ U-Net
+→ logits
+→ loss
+→ backward / optimizer step
+→ probability / prediction
+→ IoU / Dice
+→ failure case visualization
+```
+
+처음에는 synthetic binary segmentation을 사용한다. pipeline이 검증된 뒤 실제 biomedical dataset, elastic deformation, touching-cell weighted loss 등을 한 번에 하나씩 추가한다.
+
+## 논문과 연결해서 계속 질문할 것
 
 - contracting path는 무엇을 잃고 무엇을 얻는가?
-- expansive path만으로 원래 위치 정보를 완벽하게 복원할 수 있는가?
-- 그래서 encoder의 high-resolution feature를 왜 decoder에 전달하는가?
-- ResNet의 `F(x) + x`와 U-Net의 `torch.cat([skip, up], dim=1)`은 어떻게 다른가?
-- original U-Net에서 valid convolution 때문에 왜 crop이 필요한가?
-- 마지막 `1x1 Conv`는 각 pixel에서 무엇을 계산하는가?
-
-## 기본 실습 이후에만 추가할 것
-
-기본 데이터 흐름을 확인하기 전에는 아래 항목을 동시에 넣지 않는다.
-
-- elastic deformation
-- touching-cell weighted loss
-- 실제 biomedical dataset
-- feature visualization
-- padding=1 형태의 modern U-Net 변형
-
-기본 실습이 끝난 뒤 하나씩 추가하면서 결과를 비교한다.
+- expansive path만으로 localization을 충분히 복원하기 어려운 이유는 무엇인가?
+- encoder의 high-resolution feature가 decoder에 어떤 정보를 보완하는가?
+- original U-Net에서 valid convolution과 crop은 어떻게 연결되는가?
+- 마지막 `1x1 Conv`는 각 pixel에서 정확히 무엇을 계산하는가?
 
 ## 완료 기준
 
-다음 내용을 직접 설명할 수 있으면 기본 U-Net 실습을 완료한 것으로 본다.
+다음 내용을 자신의 말로 설명하고 최소 한 번 직접 실행해 확인할 수 있으면 기본 U-Net 실습을 완료한 것으로 본다.
 
 1. Problem: sliding-window CNN의 비효율과 localization/context trade-off
 2. Core idea: contracting path + expanding path + skip feature
