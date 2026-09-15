@@ -1,22 +1,46 @@
-# 논문/모델 실습 로드맵
+# 논문 기반 PyTorch 실습 로드맵
 
-이 폴더는 `.py` 기반으로 직접 타이핑하며 공부하는 실습 공간이다.
+`practice/`는 이제 일반 딥러닝 문법 연습이 아니라 **논문을 읽고 실제 데이터/구조/loss/metric을 따라가며 검증하는 공간**이다.
 
-원칙:
-- 완성 코드를 미리 채우지 않는다.
-- 위에서 아래로 순차 실행되는 Python 파일을 사용한다.
-- 핵심 tensor shape, 중간 표현, 예측 결과를 직접 확인한다.
-- 공개 저장소에서 가져온 공식 notebook이 필요한 경우에는 억지로 `.py`로 바꾸지 않고 그대로 보류한다.
+MLP, CNN, Attention, Transformer 같은 기초 연산은 `lessons/`에서 다룬다. `practice/`는 논문 단위로 구성한다.
 
-권장 순서:
-1. `01_mlp/`
-2. `02_cnn/`
-3. `03_resnet/`
-4. `04_unet/`
-5. `05_attention/`
-6. `06_transformer/`
-7. `07_vit/`
-8. `08_sam/`
-9. `09_sam2/`
+## 공통 학습 방식
+1. 논문에서 실제로 사용한 dataset / input / GT를 먼저 확인한다.
+2. raw data → transform → tensor → batch 흐름을 직접 본다.
+3. 논문 구조를 작은 단위의 실제 PyTorch 코드로 직접 타이핑한다.
+4. model output과 GT가 loss에서 어떻게 만나는지 확인한다.
+5. 논문 metric과 가능한 한 같은 기준으로 평가한다.
+6. feature / prediction / failure case를 시각화한다.
+7. 논문과 다른 축소 조건은 반드시 기록한다.
 
-각 실습은 가능한 한 `핵심 질문 → 예상 → 입력/shape 확인 → 직접 구현 → 실행 → 시각화 → 실패 사례 → 해석` 순서로 진행한다.
+TODO 빈칸을 추측해서 채우는 방식은 사용하지 않는다. 대화에서 작은 실행 단위의 실제 코드를 받고 직접 타이핑한다.
+
+## 현재 순서
+1. `01_resnet/` — Deep Residual Learning for Image Recognition
+2. `02_unet/` — U-Net
+3. `03_deeplabv3plus/` — DeepLabv3+
+4. `04_vit/` — Vision Transformer
+5. `05_dinov2/` — DINOv2
+6. `06_sam/` — Segment Anything
+7. `07_diffusion_policy/` — Diffusion Policy
+
+8번째 논문은 실제로 읽을 source가 확정되면 추가한다. 논문 없이 빈 디렉터리를 미리 만들지 않는다.
+
+## 재현 수준
+논문 재현은 세 단계로 구분한다.
+
+- **Faithful**: dataset, architecture, loss, metric을 논문과 동일하게 사용
+- **Scaled**: 핵심 조건은 유지하되 model size / epoch / subset 등을 줄임
+- **Pretrained analysis**: 대규모 pretraining이 비현실적인 foundation model은 공식 pretrained model로 논문 주장을 분석
+
+각 폴더 README에 현재 실습이 어느 수준인지 명시한다.
+
+## 논문 1편 완료 기준
+1. Problem
+2. Core idea
+3. Method
+4. Input / GT / Output / Loss
+5. Evidence
+6. My observation
+
+위 6가지를 자신의 말로 설명하고 최소 한 번 직접 실행해 관찰한 결과가 있어야 완료로 본다.
