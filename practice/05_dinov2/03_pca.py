@@ -1,19 +1,71 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import torch
 from torchvision.datasets import OxfordIIITPet
-from common import load_model,transform,extract
 
-OUT=Path("outputs/05_dinov2"); OUT.mkdir(parents=True,exist_ok=True)
-model,device=load_model(); raw=OxfordIIITPet("data/05_dinov2",split="test",download=True); tf=transform()
-images=[]; tokens=[]
-for i in [0,1,2]:
-    img,_=raw[i]; images.append(img); x=tf(img).unsqueeze(0).to(device)
-    with torch.no_grad(): _,p=extract(model,x)
-    tokens.append(p[0].cpu())
-all_tokens=torch.cat(tokens,0); centered=all_tokens-all_tokens.mean(0,keepdim=True); _,_,v=torch.pca_lowrank(centered,q=3); rgb=centered@v; rgb=(rgb-rgb.amin(0))/(rgb.amax(0)-rgb.amin(0)+1e-6)
-fig,axes=plt.subplots(2,3,figsize=(10,7)); offset=0
-for col,(img,p) in enumerate(zip(images,tokens)):
-    n=p.shape[0]; side=int(n**.5); axes[0,col].imshow(img); axes[0,col].axis("off"); axes[0,col].set_title("input")
-    axes[1,col].imshow(rgb[offset:offset+n].reshape(side,side,3)); axes[1,col].axis("off"); axes[1,col].set_title("patch PCA RGB"); offset+=n
-plt.tight_layout(); plt.savefig(OUT/"03_patch_pca.png",dpi=150); plt.show()
+from common import extract_features, image_transform, load_model
+
+
+OUTPUT_DIR = Path("outputs/05_dinov2")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+model, device = load_model()
+transform = image_transform()
+dataset = OxfordIIITPet(
+    "data/05_dinov2",
+    split="test",
+    download=True,
+)
+
+images = []
+patch_feature_sets = []
+
+for index in [0, 1, 2]:
+    image, _ = dataset[index]
+    images.append(image)
+
+    x = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        _, patch_tokens = extract_features(model, x)
+
+    patch_feature_sets.append(patch_tokens[0].cpu())
+
+# PCA is fit jointly so RGB directions mean the same thing across images.
+all_patch_features = torch.cat(patch_feature_sets, dim=0)
+mean_feature = all_patch_features.mean(dim=0, keepdim=True)
+centered = all_patch_features - mean_feature
+
+_, _, principal_directions = torch.pca_lowrank(centered, q=3)
+pca_rgb = centered @ principal_directions
+
+minimum = pca_rgb.amin(dim=0)
+maximum = pca_rgb.amax(dim=0)
+pca_rgb = (pca_rgb - minimum) / (maximum - minimum + 1e-6)
+
+fig, axes = plt.subplots(2, 3, figsize=(10, 7))
+offset = 0
+
+for column, (image, patch_features) in enumerate(
+    zip(images, patch_feature_sets)
+):
+    num_patches = patch_features.shape[0]
+    side = int(num_patches ** 0.5)
+
+    axes[0, column].imshow(image)
+    axes[0, column].set_title("input")
+
+    patch_rgb = pca_rgb[offset : offset + num_patches]
+    patch_rgb = patch_rgb.reshape(side, side, 3)
+    axes[1, column].imshow(patch_rgb)
+    axes[1, column].set_title("patch-feature PCA")
+
+    axes[0, column].axis("off")
+    axes[1, column].axis("off")
+
+    offset += num_patches
+
+plt.tight_layout()
+plt.savefig(OUTPUT_DIR / "03_patch_pca.png", dpi=150)
+plt.show()
