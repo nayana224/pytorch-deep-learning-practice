@@ -13,12 +13,13 @@
 - `external/`: 필요할 때 clone되는 공식/외부 소스. 원본 구조 보존
 
 ## practice 공통 원칙
-- 논문이 실제 사용한 dataset, input/GT, architecture, loss, augmentation, metric을 가능한 한 기준으로 삼는다.
-- raw data를 보기 전에 임의 synthetic data로 대체하지 않는다.
-- synthetic data는 pipeline/debugging 분리를 위한 최소 진단용으로만 사용한다.
+- 모든 `practice/` 실습은 **반드시 해당 논문에 실제로 등장하는 dataset / benchmark / task를 사용**한다.
+- 다른 임의 dataset으로 편의상 대체하지 않는다.
+- 논문이 실제 사용한 input/GT, architecture, loss, augmentation, metric을 가능한 한 기준으로 삼는다.
+- raw data를 보기 전에 synthetic data로 대체하지 않는다. synthetic data는 shape/debugging 진단용으로만 허용한다.
 - 논문 전체 재현이 비현실적이면 `Faithful / Scaled / Pretrained analysis` 중 어느 수준인지 README에 명시한다.
-- 논문과 다른 선택을 했으면 이유와 차이를 기록한다.
-- 대규모 foundation model은 공식 pretrained model 분석을 우선하되, training objective와 데이터 흐름은 논문 기준으로 설명한다.
+- large-scale pretraining dataset(JFT-300M, LVD-142M, SA-1B 전체 등)을 로컬에서 재학습할 수 없으면, 논문 공식 pretrained model을 사용하고 논문에 실제 등장하는 downstream/evaluation dataset으로 분석한다.
+- 논문과 다른 선택을 했으면 이유와 차이를 README에 기록한다.
 - 비교 실험에서는 한 번에 한 조건만 바꾼다.
 - accuracy 한 숫자보다 tensor shape, feature, mask, attention, prediction, error case를 적극적으로 관찰한다.
 
@@ -26,7 +27,7 @@
 `practice/`는 TODO 빈칸 채우기 방식이 아니다.
 
 기본 사이클:
-1. AI가 해당 논문 실습에 필요한 **실행 가능한 전체 코드/파일 세트**를 먼저 구성할 수 있다.
+1. AI가 해당 논문 실습에 필요한 실행 가능한 전체 코드/파일 세트를 구성할 수 있다.
 2. 사용자는 먼저 코드를 읽으며 data flow와 핵심 연산을 분석한다.
 3. 시각화/print/checkpoint 지점을 코드 안에 명확히 둔다.
 4. 사용자가 직접 실행하고 shape, feature, prediction, failure case를 관찰한다.
@@ -34,88 +35,14 @@
 6. AI가 코드의 이유, 논문과의 대응, failure mode를 설명한다.
 7. 충분히 이해한 뒤 사용자가 핵심 코드를 스스로 다시 타이핑해보며 복습한다.
 
-원칙:
-- 사용자가 원하면 한 논문 폴더의 실행 가능한 전체 파이프라인을 한 번에 완성해도 된다.
-- 전체 코드를 주더라도 파일별 역할과 시각화 지점을 명확히 분리한다.
-- 시각화 가능한 핵심 메커니즘은 반드시 시각화 또는 shape/log 출력 포인트를 둔다.
-- 사용자가 손으로 구현하는 것 자체보다, 코드의 data flow와 왜 그렇게 동작하는지를 설명할 수 있는지를 더 중요하게 본다.
-- 직접 타이핑은 처음부터 모든 boilerplate를 반복하는 용도가 아니라, 이해가 끝난 뒤 핵심 구조를 자기 손으로 재구성하는 복습 단계로 사용한다.
-- API 이름을 맞히는 퀴즈처럼 TODO만 남기지 않는다.
-- 데이터 전처리처럼 라이브러리 함수가 내부 동작을 숨길 수 있는 부분은 한 번 명시적 tensor/NumPy 연산으로 확인한 뒤, 동일 동작의 라이브러리 방식과 대응시킨다.
-
-## 현재 practice 구조
-```text
-practice/
-├── 01_resnet/
-├── 02_unet/
-├── 03_deeplabv3plus/
-├── 04_vit/
-├── 05_dinov2/
-├── 06_sam/
-└── 07_diffusion_policy/
-```
-
-### 01_resnet
-- 논문: Deep Residual Learning for Image Recognition
-- 우선 데이터: CIFAR-10 (논문 실험에 포함)
-- 핵심 검증: plain vs residual, degradation/optimization
-- 기존에 사용자가 직접 타이핑한 `residual_block.py`는 학습 이력으로 보존
-
-### 02_unet
-- 논문: U-Net: Convolutional Networks for Biomedical Image Segmentation
-- 우선 데이터: ISBI 2012 EM segmentation challenge
-- 공식 설명 페이지: `https://imagej.net/events/isbi-2012-segmentation-challenge`
-- 현재 archive: `https://downloads.imagej.net/ISBI-2012-challenge.zip`
-- dataset helper: `scripts/download_isbi2012.sh`
-- local data 위치: `data/02_unet/isbi2012/` (`data/`는 gitignore)
-- training: 30장의 512x512 EM image + fully annotated segmentation map
-- 현재 확인된 파일: `train-volume.tif`, `train-labels.tif`, `test-volume.tif`, `test-labels.tif`, `challenge-error-metrics.bsh`
-- TIFF는 PNG로 변환하지 않고 multi-page stack 그대로 먼저 읽는다.
-- 현재 관찰상 GT의 `0`은 membrane/boundary, `255`는 cell interior로 해석한다.
-- `unet.py`: original-style valid convolution / crop+concat / 1x1 classifier를 포함한 전체 U-Net model definition
-- `01_data.py`: TIFF stack, class 의미, tensor 변환, input/GT/overlay 시각화
-- `02_model.py`: Figure 1의 `572x572 → 388x388` shape trace와 crop+concat/feature 시각화
-- `03_train.py`: 실제 30-slice data를 이용한 baseline training, SGD momentum 0.99, CrossEntropyLoss, checkpoint/curve
-- `04_analyze.py`: probability / prediction / error / IoU / Dice / encoder-decoder feature 시각화
-- 현재 training baseline은 논문의 boundary-aware weight map과 elastic deformation을 아직 구현하지 않은 architecture/data-flow baseline이며 README에 차이를 명시한다.
-- Figure 1 input tile 572x572와 dataset image 512x512를 구분한다.
-- valid convolution 때문에 output이 input보다 작으므로 loss 계산 시 GT를 model output field-of-view에 맞게 center crop한다.
-- 이후 fidelity 단계: elastic deformation → boundary-aware weighted loss → overlap-tile/mirror padding → challenge metric 비교.
-
-### 03_deeplabv3plus
-- 논문: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation
-- 우선 데이터: PASCAL VOC 2012, 이후 Cityscapes
-- 핵심 검증: atrous convolution, ASPP, low-level decoder feature, output stride, mIoU
-
-### 04_vit
-- 논문: An Image Is Worth 16x16 Words
-- 논문 데이터: ImageNet/ImageNet-21k/JFT-300M 및 downstream datasets
-- 로컬 실습: 논문에 포함된 공개 downstream dataset으로 patch/token 흐름과 transfer를 검증
-- 대규모 pretraining을 생략하면 Scaled 또는 Pretrained analysis로 명시
-
-### 05_dinov2
-- 논문: DINOv2: Learning Robust Visual Features without Supervision
-- 원 논문 pretraining: LVD-142M + large ViT SSL
-- 실습: 공식 pretrained DINOv2 feature 분석 중심
-- PCA patch visualization, frozen feature, nearest-neighbor/linear probe 등을 우선
-
-### 06_sam
-- 논문: Segment Anything
-- 원 논문: SA-1B 11M images / 1.1B masks, data engine
-- 실습: 공식 pretrained SAM으로 image encoder / prompt encoder / mask decoder와 promptable segmentation 분석
-- point / box / ambiguity / multiple masks / failure case를 관찰
-
-### 07_diffusion_policy
-- 논문: Diffusion Policy: Visuomotor Policy Learning via Action Diffusion
-- 우선: 공개 demonstration/benchmark 중 재현 가능한 task
-- 핵심 흐름: observation + noisy action + diffusion timestep → predicted noise → MSE
-- action sequence, receding horizon, multimodality, rollout failure를 관찰
-
-## 공개/공식 코드
-- 외부 공식 구현이 있으면 먼저 언어, 프레임워크, 파일 구조, 논문과의 대응을 확인한다.
-- 공식 코드가 현재 학습 프레임워크와 다르면 원본을 보존하고 핵심 구조를 PyTorch로 다시 구현할 수 있다.
-- 공식 notebook은 형식만 바꾸기 위해 임의로 `.py`로 변환하지 않는다.
-- 외부 소스는 `external/`에서 원본을 임의 수정하지 않는다.
+## 현재 practice 구조와 paper-data 기준
+- `01_resnet`: CIFAR-10 paper experiment. Plain vs residual, 6n+2 architecture, option-A shortcut, paper optimizer/schedule.
+- `02_unet`: ISBI 2012 EM segmentation challenge. Original valid-conv U-Net, crop+concat, TIFF stack.
+- `03_deeplabv3plus`: PASCAL VOC 2012 우선, Cityscapes 확장. ASPP + low-level decoder + atrous separable conv.
+- `04_vit`: 논문 downstream 중 CIFAR-100 우선. ViT-B/16 구조와 patch/token/attention 분석. JFT/ImageNet-21k pretraining은 scaled 또는 pretrained analysis로 구분.
+- `05_dinov2`: official pretrained DINOv2 + 논문 benchmark인 Oxford-IIIT Pets를 기본 분석 dataset으로 사용. PCA patch features, frozen linear probe, retrieval.
+- `06_sam`: official pretrained SAM + SA-1B image/mask subset. point/box/multimask ambiguity와 IoU를 분석. SA-1B 전체 재학습은 하지 않는다.
+- `07_diffusion_policy`: official Push-T demonstration dataset. observation/action horizons, DDPM action denoising, receding-horizon rollout을 분석한다.
 
 ## 데이터 확인 규칙
 가능하면 항상 다음 순서로 본다.
@@ -126,9 +53,9 @@ practice/
 - dtype
 - value range / unit
 - channel 의미
-- label/mask 의미
+- label/mask/action 의미
 - invalid/missing 값
-- train/val/test split
+- train/val/test split 또는 episode split
 
 ## 논문 실습 완료 기준
 다음 6가지를 자신의 말로 설명하고 최소 실습 1개를 완료해야 한다.
@@ -145,8 +72,14 @@ practice/
 - intermediate feature
 - prediction
 - metric curve
+- attention / PCA / probability
 - error map / failure case
 - 논문 핵심 메커니즘에 해당하는 시각화
+
+## 공개/공식 코드
+- 공식 구현이 있으면 우선 확인하고, foundation model 계열(DINOv2, SAM, Diffusion Policy)은 공식 checkpoint/code를 적극 활용한다.
+- 공식 코드가 현재 학습 프레임워크와 다르면 원본을 `external/`에 보존하고 핵심 구조를 PyTorch로 재구현할 수 있다.
+- 공식 notebook은 단순 형식 변환 목적으로 임의 수정하지 않는다.
 
 ## 새 작업 규칙
 새로운 작업을 할 때마다 본 파일과 해당 README가 실제 저장소 상태 및 학습 방식과 맞는지 확인하고 필요한 경우 함께 업데이트한다.
