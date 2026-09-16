@@ -17,19 +17,24 @@ args = parser.parse_args()
 model, device = load_model()
 transform = image_transform()
 
-train_set = OxfordIIITPet(
-    "data/05_dinov2",
-    split="trainval",
-    download=True,
-    transform=transform,
-)
-
-test_set = OxfordIIITPet(
-    "data/05_dinov2",
-    split="test",
-    download=True,
-    transform=transform,
-)
+try:
+    train_set = OxfordIIITPet(
+        "data/05_dinov2",
+        split="trainval",
+        download=False,
+        transform=transform,
+    )
+    test_set = OxfordIIITPet(
+        "data/05_dinov2",
+        split="test",
+        download=False,
+        transform=transform,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
 
 train_loader = DataLoader(
     train_set,
@@ -45,7 +50,6 @@ test_loader = DataLoader(
     num_workers=4,
 )
 
-# Freeze DINOv2 completely.
 for parameter in model.parameters():
     parameter.requires_grad = False
 
@@ -57,13 +61,8 @@ with torch.no_grad():
 
 feature_dim = sample_feature.shape[-1]
 probe = nn.Linear(feature_dim, 37).to(device)
-
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(
-    probe.parameters(),
-    lr=0.05,
-    momentum=0.9,
-)
+optimizer = torch.optim.SGD(probe.parameters(), lr=0.05, momentum=0.9)
 
 for epoch in range(args.epochs):
     probe.train()
@@ -82,7 +81,6 @@ for epoch in range(args.epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
         train_loss += loss.item()
 
     probe.eval()
@@ -93,11 +91,8 @@ for epoch in range(args.epochs):
         for images, labels in test_loader:
             images = images.to(device)
             labels = labels.to(device)
-
             class_features, _ = extract_features(model, images)
-            logits = probe(class_features)
-            prediction = logits.argmax(dim=1)
-
+            prediction = probe(class_features).argmax(dim=1)
             correct += (prediction == labels).sum().item()
             total += labels.numel()
 
