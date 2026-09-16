@@ -3,69 +3,122 @@ import torch.nn as nn
 
 
 class PatchEmbedding(nn.Module):
-    def __init__(self, image_size=384, patch_size=16, dim=768):
+    def __init__(self, image_size=384, patch_size=16, hidden_dim=768):
         super().__init__()
-        self.image_size = image_size
-        self.patch_size = patch_size
-        self.grid = image_size // patch_size
-        self.proj = nn.Conv2d(3, dim, kernel_size=patch_size, stride=patch_size)
+        self.projection = nn.Conv2d(
+            3,
+            hidden_dim,
+            kernel_size=patch_size,
+            stride=patch_size,
+        )
 
     def forward(self, x):
-        x = self.proj(x)
-        return x.flatten(2).transpose(1, 2)
+        x = self.projection(x)
+        x = x.flatten(2)
+        x = x.transpose(1, 2)
+        return x
 
 
-class EncoderBlock(nn.Module):
-    def __init__(self, dim, heads, mlp_dim, dropout=0.0):
+class TransformerEncoderBlock(nn.Module):
+    def __init__(self, hidden_dim=768, num_heads=12, mlp_dim=3072):
         super().__init__()
-        self.norm1 = nn.LayerNorm(dim)
-        self.attn = nn.MultiheadAttention(dim, heads, dropout=dropout, batch_first=True)
-        self.norm2 = nn.LayerNorm(dim)
-        self.mlp = nn.Sequential(nn.Linear(dim, mlp_dim), nn.GELU(), nn.Dropout(dropout), nn.Linear(mlp_dim, dim), nn.Dropout(dropout))
+
+        self.norm1 = nn.LayerNorm(hidden_dim)
+        self.attention = nn.MultiheadAttention(
+            hidden_dim,
+            num_heads,
+            batch_first=True,
+        )
+
+        self.norm2 = nn.LayerNorm(hidden_dim)
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_dim, mlp_dim),
+            nn.GELU(),
+            nn.Linear(mlp_dim, hidden_dim),
+        )
 
     def forward(self, x, return_attention=False):
-        q = self.norm1(x)
-        y, attn = self.attn(q, q, q, need_weights=return_attention, average_attn_weights=False)
-        x = x + y
-        x = x + self.mlp(self.norm2(x))
-        return (x, attn) if return_attention else x
+        normalized = self.norm1(x)
+        attention_output, attention_map = self.attention(
+            normalized,
+            normalized,
+            normalized,
+            need_weights=return_attention,
+            average_attn_weights=False,
+        )
+        x = x + attention_output
+
+        mlp_output = self.mlp(self.norm2(x))
+        x = x + mlp_output
+
+        if return_attention:
+            return x, attention_map
+        return x
 
 
 class VisionTransformer(nn.Module):
-    def __init__(self, image_size=384, patch_size=16, num_classes=100, dim=768, depth=12, heads=12, mlp_dim=3072, dropout=0.0):
+    def __init__(
+        self,
+        image_size=384,
+        patch_size=16,
+        num_classes=100,
+        hidden_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_dim=3072,
+    ):
         super().__init__()
-        self.patch = PatchEmbedding(image_size, patch_size, dim)
-        n_patches = (image_size // patch_size) ** 2
-        self.cls = nn.Parameter(torch.zeros(1, 1, dim))
-        self.pos = nn.Parameter(torch.zeros(1, n_patches + 1, dim))
-        self.blocks = nn.ModuleList([EncoderBlock(dim, heads, mlp_dim, dropout) for _ in range(depth)])
-        self.norm = nn.LayerNorm(dim)
-        self.head = nn.Linear(dim, num_classes)
-        nn.init.trunc_normal_(self.pos, std=0.02)
-        nn.init.trunc_normal_(self.cls, std=0.02)
 
-    def forward(self, x, return_features=False, return_attention=False):
-        patches = self.patch(x)
-        cls = self.cls.expand(x.size(0), -1, -1)
-        tokens = torch.cat([cls, patches], dim=1) + self.pos
-        attentions = []
-        for block in self.blocks:
+        self.patch_embedding = PatchEmbedding(image_size, patch_size, hidden_dim)
+
+        num_patches = (image_size // patch_size) ** 2
+        self.class_token = nn.Parameter(torch.zeros(1, 1, hidden_dim))
+        self.position_embedding = nn.Parameter(
+            torch.zeros(1, num_patches + 1, hidden_dim)
+        )
+
+        self.encoder_blocks = nn.ModuleList(
+            [
+                TransformerEncoderBlock(hidden_dim, num_heads, mlp_dim)
+                for _ in range(depth)
+            ]
+        )
+
+        self.norm = nn.LayerNorm(hidden_dim)
+        self.head = nn.Linear(hidden_dim, num_classes)
+
+    def forward(self, x, return_attention=False):
+        patch_tokens = self.patch_embedding(x)
+
+        cls_token = self.class_token.expand(x.shape[0], -1, -1)
+        tokens = torch.cat([cls_token, patch_tokens], dim=1)
+        tokens = tokens + self.position_embedding
+
+        attention_maps = []
+
+        for block in self.encoder_blocks:
             if return_attention:
-                tokens, attn = block(tokens, True)
-                attentions.append(attn)
+                tokens, attention = block(tokens, return_attention=True)
+                attention_maps.append(attention)
             else:
                 tokens = block(tokens)
+
         tokens = self.norm(tokens)
-        logits = self.head(tokens[:, 0])
-        if return_features or return_attention:
-            return logits, {"patches": patches, "tokens": tokens, "attentions": attentions}
+        cls_token = tokens[:, 0]
+        logits = self.head(cls_token)
+
+        if return_attention:
+            return logits, patch_tokens, tokens, attention_maps
         return logits
 
 
 def vit_b16(num_classes=100, image_size=384):
-    return VisionTransformer(image_size=image_size, patch_size=16, num_classes=num_classes, dim=768, depth=12, heads=12, mlp_dim=3072)
-
-
-def vit_tiny16(num_classes=100, image_size=224):
-    """Scaled local variant preserving the paper data flow."""
-    return VisionTransformer(image_size=image_size, patch_size=16, num_classes=num_classes, dim=192, depth=12, heads=3, mlp_dim=768)
+    return VisionTransformer(
+        image_size=image_size,
+        patch_size=16,
+        num_classes=num_classes,
+        hidden_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_dim=3072,
+    )

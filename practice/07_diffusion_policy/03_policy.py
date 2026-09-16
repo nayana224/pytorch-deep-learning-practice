@@ -1,22 +1,40 @@
-import torch
 from torch.utils.data import DataLoader
 
 from common import make_dataset, make_policy
 
 
-ds = make_dataset()
+# 1. Official Push-T demonstrations
+train_dataset = make_dataset()
+normalizer = train_dataset.get_normalizer()
+
+# 2. Official image-conditioned diffusion policy
 policy, device = make_policy()
-policy.set_normalizer(ds.get_normalizer())
-batch = next(iter(DataLoader(ds, batch_size=2, shuffle=True)))
-batch = {
-    "obs": {k: v.to(device) for k, v in batch["obs"].items()},
-    "action": batch["action"].to(device),
+policy.set_normalizer(normalizer)
+
+# 3. One demonstration batch
+loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+batch = next(iter(loader))
+
+images = batch["obs"]["image"].to(device)
+agent_positions = batch["obs"]["agent_pos"].to(device)
+actions = batch["action"].to(device)
+
+batch_on_device = {
+    "obs": {
+        "image": images,
+        "agent_pos": agent_positions,
+    },
+    "action": actions,
 }
+
+# 4. observation + noisy action + timestep -> predicted noise
+#    target = sampled Gaussian noise, loss = MSE
 policy.train()
-loss = policy.compute_loss(batch)
-print("obs image:", batch["obs"]["image"].shape)
-print("obs agent_pos:", batch["obs"]["agent_pos"].shape)
-print("action:", batch["action"].shape)
-print("one official-policy epsilon MSE loss:", float(loss))
-print("diffusion model parameters:", sum(p.numel() for p in policy.model.parameters()))
-print("vision encoder parameters:", sum(p.numel() for p in policy.obs_encoder.parameters()))
+loss = policy.compute_loss(batch_on_device)
+
+print("image observations :", images.shape)
+print("agent positions    :", agent_positions.shape)
+print("action sequence    :", actions.shape)
+print("epsilon MSE loss   :", float(loss))
+print("diffusion params   :", sum(p.numel() for p in policy.model.parameters()))
+print("vision params      :", sum(p.numel() for p in policy.obs_encoder.parameters()))
