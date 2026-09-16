@@ -14,10 +14,17 @@ class PaperCIFAR10(Dataset):
     """CIFAR-10 preprocessing used in the paper's CIFAR experiment."""
 
     def __init__(self, train=True, augment=False):
-        self.dataset = CIFAR10(DATA_DIR, train=train, download=True)
+        try:
+            self.dataset = CIFAR10(DATA_DIR, train=train, download=False)
+            train_set = CIFAR10(DATA_DIR, train=True, download=False)
+        except RuntimeError as error:
+            raise FileNotFoundError(
+                "CIFAR-10 is not prepared. Run: "
+                "python scripts/download_torchvision_data.py cifar10"
+            ) from error
+
         self.augment = augment
 
-        train_set = CIFAR10(DATA_DIR, train=True, download=True)
         mean_image = train_set.data.astype(np.float32).mean(axis=0) / 255.0
         self.mean_image = torch.from_numpy(mean_image).permute(2, 0, 1)
 
