@@ -48,12 +48,17 @@ def pair_to_tensor(image, mask, train=False, crop_size=513):
 
 class VOC2012Dataset(Dataset):
     def __init__(self, split="train", train_transform=False):
-        self.dataset = VOCSegmentation(
-            DATA_DIR,
-            year="2012",
-            image_set=split,
-            download=True,
-        )
+        try:
+            self.dataset = VOCSegmentation(
+                DATA_DIR,
+                year="2012",
+                image_set=split,
+                download=False,
+            )
+        except RuntimeError as error:
+            raise FileNotFoundError(
+                "PASCAL VOC 2012 is not prepared. Run: bash scripts/download_voc2012.sh"
+            ) from error
         self.train_transform = train_transform
 
     def __len__(self):
