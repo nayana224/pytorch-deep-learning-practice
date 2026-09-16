@@ -2,6 +2,15 @@
 
 재현 수준: **CIFAR-10 실험을 중심으로 Faithful에 가까운 학습 실습**.
 
+## 데이터 준비
+공부 코드는 데이터를 자동 다운로드하지 않는다. 먼저 한 번만 실행한다.
+
+```bash
+python scripts/download_torchvision_data.py cifar10
+```
+
+이미 CIFAR-10이 있으면 `[skip]`하고 다시 받지 않는다.
+
 ## 논문에서 볼 구조
 ```text
 32x32 RGB
