@@ -12,11 +12,18 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 model, device = load_model()
 transform = image_transform()
-dataset = OxfordIIITPet(
-    "data/05_dinov2",
-    split="test",
-    download=True,
-)
+
+try:
+    dataset = OxfordIIITPet(
+        "data/05_dinov2",
+        split="test",
+        download=False,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
 
 images = []
 patch_feature_sets = []
@@ -32,7 +39,6 @@ for index in [0, 1, 2]:
 
     patch_feature_sets.append(patch_tokens[0].cpu())
 
-# PCA is fit jointly so RGB directions mean the same thing across images.
 all_patch_features = torch.cat(patch_feature_sets, dim=0)
 mean_feature = all_patch_features.mean(dim=0, keepdim=True)
 centered = all_patch_features - mean_feature
@@ -47,9 +53,7 @@ pca_rgb = (pca_rgb - minimum) / (maximum - minimum + 1e-6)
 fig, axes = plt.subplots(2, 3, figsize=(10, 7))
 offset = 0
 
-for column, (image, patch_features) in enumerate(
-    zip(images, patch_feature_sets)
-):
+for column, (image, patch_features) in enumerate(zip(images, patch_feature_sets)):
     num_patches = patch_features.shape[0]
     side = int(num_patches ** 0.5)
 
