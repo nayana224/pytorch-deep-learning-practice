@@ -1,126 +1,79 @@
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
+
+from unet import UNet, print_feature_shapes
 
 
-class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-
-        self.conv = nn.Sequential(
-            nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=3,
-                padding=0,
-            ),
-            nn.ReLU(inplace=True),
-
-            nn.Conv2d(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=3,
-                padding=0,
-            ),
-            nn.ReLU(inplace=True),
-        )
-
-    def forward(self, x):
-        return self.conv(x)
+OUTPUT_DIR = Path("outputs/02_unet")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def center_crop(encoder_feature, decoder_feature):
-    target_h = decoder_feature.shape[-2]
-    target_w = decoder_feature.shape[-1]
-
-    h = encoder_feature.shape[-2]
-    w = encoder_feature.shape[-1]
-
-    top = (h - target_h) // 2
-    left = (w - target_w) // 2
-
-    return encoder_feature[
-        :,
-        :,
-        top : top + target_h,
-        left : left + target_w,
-    ]
+def normalize_map(x: torch.Tensor) -> torch.Tensor:
+    x = x.detach().cpu()
+    x = x - x.min()
+    denom = x.max().clamp_min(1e-8)
+    return x / denom
 
 
-class UNetFirstUp(nn.Module):
-    def __init__(self):
-        super().__init__()
+def main() -> None:
+    torch.manual_seed(0)
 
-        # Contracting path
-        self.enc1 = DoubleConv(1, 64)
-        self.enc2 = DoubleConv(64, 128)
-        self.enc3 = DoubleConv(128, 256)
-        self.enc4 = DoubleConv(256, 512)
+    model = UNet(in_channels=1, num_classes=2)
+    model.eval()
 
-        self.pool = nn.MaxPool2d(
-            kernel_size=2,
-            stride=2,
-        )
+    # Figure 1 in the original paper uses a 572x572 input tile.
+    x = torch.randn(1, 1, 572, 572)
 
-        self.bottleneck = DoubleConv(512, 1024)
+    with torch.no_grad():
+        logits, features = model(x, return_features=True)
 
-        # Expanding path - first stage
-        self.up1 = nn.ConvTranspose2d(
-            in_channels=1024,
-            out_channels=512,
-            kernel_size=2,
-            stride=2,
-        )
+    print("=== Original U-Net Figure 1 shape trace ===")
+    print_feature_shapes(features)
+    print()
+    print("final output shape:", logits.shape)
+    print("expected Figure 1 output spatial size: 388 x 388")
 
-        self.dec1 = DoubleConv(1024, 512)
+    assert logits.shape == (1, 2, 388, 388)
 
-    def forward(self, x):
-        # Contracting path
-        x1 = self.enc1(x)
-        p1 = self.pool(x1)
+    # Visualize mean absolute activation at important points.
+    names = ["enc1", "enc4", "bottleneck", "crop4", "up4", "concat4", "dec1"]
 
-        x2 = self.enc2(p1)
-        p2 = self.pool(x2)
+    fig, axes = plt.subplots(2, 4, figsize=(16, 8))
+    axes = axes.ravel()
 
-        x3 = self.enc3(p2)
-        p3 = self.pool(x3)
+    for ax, name in zip(axes, names):
+        feature = features[name][0].abs().mean(dim=0)
+        ax.imshow(normalize_map(feature), cmap="viridis")
+        ax.set_title(f"{name}\n{tuple(features[name].shape)}")
+        ax.axis("off")
 
-        x4 = self.enc4(p3)
-        p4 = self.pool(x4)
+    axes[-1].axis("off")
+    fig.suptitle("U-Net feature-map overview (random input; structure check)")
+    fig.tight_layout()
+    fig.savefig(OUTPUT_DIR / "02_model_feature_overview.png", dpi=160)
 
-        x5 = self.bottleneck(p4)
+    # Crop+concat visualization: compare spatial alignment explicitly.
+    crop4 = features["crop4"][0].abs().mean(dim=0)
+    up4 = features["up4"][0].abs().mean(dim=0)
+    concat4 = features["concat4"][0].abs().mean(dim=0)
 
-        # Expanding path - first stage
-        up1 = self.up1(x5)
+    fig2, axes2 = plt.subplots(1, 3, figsize=(12, 4))
+    for ax, feature, title in zip(
+        axes2,
+        [crop4, up4, concat4],
+        ["cropped encoder feature", "up-convolved decoder feature", "after channel concat"],
+    ):
+        ax.imshow(normalize_map(feature), cmap="magma")
+        ax.set_title(title)
+        ax.axis("off")
 
-        x4_crop = center_crop(x4, up1)
+    fig2.tight_layout()
+    fig2.savefig(OUTPUT_DIR / "02_model_crop_concat.png", dpi=160)
 
-        merged = torch.cat(
-            [x4_crop, up1],
-            dim=1,
-        )
-
-        d1 = self.dec1(merged)
-
-        return x1, x2, x3, x4, x5, up1, x4_crop, merged, d1
+    plt.show()
 
 
-model = UNetFirstUp()
-
-x = torch.randn(1, 1, 572, 572)
-
-x1, x2, x3, x4, x5, up1, x4_crop, merged, d1 = model(x)
-
-print("input      :", x.shape)
-
-print()
-print("enc1       :", x1.shape)
-print("enc2       :", x2.shape)
-print("enc3       :", x3.shape)
-print("enc4       :", x4.shape)
-print("bottom     :", x5.shape)
-
-print()
-print("up1        :", up1.shape)
-print("x4 crop    :", x4_crop.shape)
-print("concat     :", merged.shape)
-print("decoder 1  :", d1.shape)
+if __name__ == "__main__":
+    main()
