@@ -9,7 +9,19 @@ from common import transform
 OUT = Path("outputs/05_dinov2")
 OUT.mkdir(parents=True, exist_ok=True)
 
-ds = OxfordIIITPet("data/05_dinov2", split="test", target_types="category", download=True)
+try:
+    ds = OxfordIIITPet(
+        "data/05_dinov2",
+        split="test",
+        target_types="category",
+        download=False,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
+
 image, label = ds[0]
 x = transform()(image)
 
