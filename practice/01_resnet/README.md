@@ -1,34 +1,25 @@
 # 01. ResNet — Deep Residual Learning for Image Recognition
 
-이 폴더는 ResNet 논문을 PyTorch로 따라가며 이해하는 실습이다.
+재현 수준: **CIFAR-10 experiment에 대해 Faithful에 가까운 로컬 재현**.
 
-## 원칙
-- 논문에서 실제로 사용한 문제/데이터/구조/비교를 우선한다.
-- 사용자는 대화에서 받은 실제 코드를 직접 타이핑한다.
-- TODO 빈칸 채우기보다 작은 실행 단위로 코드를 누적한다.
-- 논문 전체 성능 재현이 너무 비싸면, 무엇을 줄였는지 명시하고 핵심 주장만 작은 실험으로 검증한다.
-
-## 논문 기준 실습
-논문은 ImageNet과 CIFAR-10에서 plain network와 residual network를 비교한다. 로컬 실습은 비용을 고려해 CIFAR-10 실험을 우선한다.
-
-논문 CIFAR-10 실험에서 확인할 핵심:
-- 32x32 RGB 입력
-- 10 classes
-- plain network vs residual network
-- depth가 증가했을 때 degradation이 나타나는지
-- shortcut이 optimization을 어떻게 바꾸는지
+논문은 CIFAR-10에서 32×32 입력, per-pixel mean subtraction, 3×3 conv, `{16,32,64}` channels, `6n+2` layers, option-A identity shortcut을 사용한다. 학습은 SGD, momentum 0.9, weight decay 1e-4, batch 128, lr 0.1에서 시작해 32k/48k iteration에 10배씩 감소하고 64k에 종료한다. augmentation은 4-pixel padding 후 random 32×32 crop과 horizontal flip이다.
 
 ## 파일
-- `residual_block.py`: 이미 직접 타이핑한 residual block 학습 이력 보존
-- `01_data.py`: CIFAR-10 데이터와 preprocessing 확인
-- `02_model.py`: 논문 CIFAR용 plain/residual architecture 구현
-- `03_train.py`: 동일 조건 학습 및 비교
-- `04_analyze.py`: training error, test error, prediction, failure case 분석
+- `cifar_resnet.py`: paper CIFAR plain/residual network, option A shortcut
+- `01_data.py`: CIFAR-10 download, per-pixel mean subtraction, paper augmentation 확인
+- `02_model.py`: 20/56-layer shape와 parameter 수 확인
+- `03_train.py`: 논문 iteration schedule로 plain/residual 학습
+- `04_analyze.py`: test error curve, prediction, feature response magnitude 관찰
+- `residual_block.py`: 이전 직접 타이핑 학습 이력 보존
 
-## 완료 기준
-1. Problem: 깊은 plain network의 degradation problem
-2. Core idea: H(x)를 직접 학습하지 않고 F(x)=H(x)-x를 학습
-3. Method: identity/projection shortcut과 residual block
-4. Input / GT / Output / Loss: CIFAR-10 image → logits → CE loss
-5. Evidence: plain vs residual의 training/test error 비교
-6. My observation: 직접 본 activation/gradient/prediction 차이
+## 실행
+```bash
+python practice/01_resnet/01_data.py
+python practice/01_resnet/02_model.py
+python practice/01_resnet/03_train.py --kind plain --depth 20
+python practice/01_resnet/03_train.py --kind resnet --depth 20
+python practice/01_resnet/03_train.py --kind resnet --depth 56
+python practice/01_resnet/04_analyze.py
+```
+
+핵심 비교는 **같은 depth의 plain vs residual**, 그리고 **depth 증가 시 degradation/optimization**이다. 논문은 CIFAR-10에서 ResNet-20/32/44/56/110을 비교한다.
