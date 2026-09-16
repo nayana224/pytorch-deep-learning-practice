@@ -16,7 +16,10 @@ fi
 
 echo "[download/resume] PASCAL VOC 2012"
 if command -v wget >/dev/null 2>&1; then
-  wget -c -O "$ARCHIVE" "$URL"
+  (
+    cd "$DIR"
+    wget -c "$URL"
+  )
 elif command -v curl >/dev/null 2>&1; then
   curl -L -C - "$URL" -o "$ARCHIVE"
 else
