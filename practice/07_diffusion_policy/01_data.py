@@ -1,29 +1,55 @@
 import matplotlib.pyplot as plt
-import torch
 
-from common import make_dataset, OUT, HORIZON, N_OBS_STEPS, N_ACTION_STEPS
+from common import (
+    ACTION_HORIZON,
+    OBSERVATION_HORIZON,
+    OUT,
+    PREDICTION_HORIZON,
+    make_dataset,
+)
 
 
-ds = make_dataset()
-sample = ds[0]
-image = sample["obs"]["image"]
-pos = sample["obs"]["agent_pos"]
-action = sample["action"]
+# Official Push-T demonstration dataset
+train_dataset = make_dataset()
+sample = train_dataset[0]
 
-print("dataset samples:", len(ds))
-print("image sequence:", image.shape, image.dtype, float(image.min()), float(image.max()))
-print("agent_pos:", pos.shape, pos.dtype)
-print("action:", action.shape, action.dtype)
-print("paper horizons: prediction=", HORIZON, "obs=", N_OBS_STEPS, "execute=", N_ACTION_STEPS)
+image_sequence = sample["obs"]["image"]
+agent_positions = sample["obs"]["agent_pos"]
+action_sequence = sample["action"]
+
+print("dataset samples      :", len(train_dataset))
+print("image sequence       :", image_sequence.shape)
+print("agent positions      :", agent_positions.shape)
+print("action sequence      :", action_sequence.shape)
+print("prediction horizon   :", PREDICTION_HORIZON)
+print("observation horizon  :", OBSERVATION_HORIZON)
+print("action horizon       :", ACTION_HORIZON)
 
 fig, axes = plt.subplots(1, 3, figsize=(13, 4))
-axes[0].imshow(image[0].permute(1, 2, 0).clamp(0, 1))
-axes[0].set_title("Push-T obs t=0")
-axes[1].imshow(image[1].permute(1, 2, 0).clamp(0, 1))
-axes[1].set_title("Push-T obs t=1")
-axes[2].plot(action[:, 0], action[:, 1], "o-")
-axes[2].scatter(pos[:N_OBS_STEPS, 0], pos[:N_OBS_STEPS, 1], marker="x", s=80)
-axes[2].set_title("16-step action chunk")
+
+axes[0].imshow(image_sequence[0].permute(1, 2, 0).clamp(0, 1))
+axes[0].set_title("observation 0")
+
+axes[1].imshow(image_sequence[1].permute(1, 2, 0).clamp(0, 1))
+axes[1].set_title("observation 1")
+
+axes[2].plot(
+    action_sequence[:, 0],
+    action_sequence[:, 1],
+    "o-",
+)
+axes[2].scatter(
+    agent_positions[:OBSERVATION_HORIZON, 0],
+    agent_positions[:OBSERVATION_HORIZON, 1],
+    marker="x",
+    s=80,
+)
+axes[2].set_title("predicted-action horizon target")
 axes[2].set_aspect("equal", adjustable="box")
-for ax in axes[:2]: ax.axis("off")
-plt.tight_layout(); plt.savefig(OUT / "01_pusht_data.png", dpi=150); plt.show()
+
+axes[0].axis("off")
+axes[1].axis("off")
+
+plt.tight_layout()
+plt.savefig(OUT / "01_pusht_data.png", dpi=150)
+plt.show()
