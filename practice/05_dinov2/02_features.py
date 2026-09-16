@@ -4,22 +4,25 @@ from torchvision.datasets import OxfordIIITPet
 from common import extract_features, image_transform, load_model
 
 
-# 1. Official pretrained DINOv2
 model, device = load_model()
-
-# 2. Paper benchmark image
 transform = image_transform()
-dataset = OxfordIIITPet(
-    "data/05_dinov2",
-    split="test",
-    download=True,
-    transform=transform,
-)
+
+try:
+    dataset = OxfordIIITPet(
+        "data/05_dinov2",
+        split="test",
+        download=False,
+        transform=transform,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
 
 image, label = dataset[0]
 image = image.unsqueeze(0).to(device)
 
-# 3. image -> CLS feature + patch features
 with torch.no_grad():
     class_token, patch_tokens = extract_features(model, image)
 
