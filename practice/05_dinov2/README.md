@@ -6,6 +6,12 @@
 
 분석 dataset은 논문 Table 8의 frozen-feature transfer benchmark 중 하나인 **Oxford-IIIT Pets**다. 즉 임의 dataset이 아니라 논문 평가에 실제 등장하는 dataset을 사용한다. 논문은 DINOv2 frozen features를 linear evaluation, retrieval, segmentation/depth 및 PCA patch visualization으로 평가한다.
 
+## 데이터 준비
+```bash
+python scripts/download_torchvision_data.py pets
+```
+이미 있으면 `[skip]`하고 다시 받지 않는다. 분석 코드는 데이터를 자동 다운로드하지 않는다.
+
 ## 파일
 - `common.py`: official torch.hub DINOv2 + preprocessing
 - `01_data.py`: Oxford-IIIT Pets 실제 데이터
