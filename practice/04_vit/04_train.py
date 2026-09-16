@@ -23,10 +23,7 @@ train_transform = transforms.Compose(
         transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.485, 0.456, 0.406],
-            [0.229, 0.224, 0.225],
-        ),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
 )
 
@@ -34,26 +31,28 @@ test_transform = transforms.Compose(
     [
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.485, 0.456, 0.406],
-            [0.229, 0.224, 0.225],
-        ),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
 )
 
-train_set = CIFAR100(
-    "data/04_vit",
-    train=True,
-    download=True,
-    transform=train_transform,
-)
-
-test_set = CIFAR100(
-    "data/04_vit",
-    train=False,
-    download=True,
-    transform=test_transform,
-)
+try:
+    train_set = CIFAR100(
+        "data/04_vit",
+        train=True,
+        download=False,
+        transform=train_transform,
+    )
+    test_set = CIFAR100(
+        "data/04_vit",
+        train=False,
+        download=False,
+        transform=test_transform,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "CIFAR-100 is not prepared. Run: "
+        "python scripts/download_torchvision_data.py cifar100"
+    ) from error
 
 train_loader = DataLoader(
     train_set,
@@ -77,7 +76,6 @@ else:
     model = vit_tiny16(num_classes=100, image_size=image_size)
 
 model = model.to(device)
-
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(
     model.parameters(),
