@@ -13,11 +13,18 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 model, device = load_model()
 transform = image_transform()
-dataset = OxfordIIITPet(
-    "data/05_dinov2",
-    split="test",
-    download=True,
-)
+
+try:
+    dataset = OxfordIIITPet(
+        "data/05_dinov2",
+        split="test",
+        download=False,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
 
 features = []
 num_images = min(100, len(dataset))
