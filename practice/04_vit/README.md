@@ -1,32 +1,23 @@
-# 04. Vision Transformer (ViT) — An Image Is Worth 16x16 Words
+# 04. Vision Transformer — An Image Is Worth 16x16 Words
 
-이 폴더는 ViT 논문의 데이터 흐름과 구조를 PyTorch로 따라간다.
+재현 수준: **Scaled downstream training / paper architecture analysis**.
 
-## 논문 기준
-논문은 ImageNet, ImageNet-21k, JFT-300M 등 대규모 pre-training을 사용하고 CIFAR-10/100, Oxford-IIIT Pets, Flowers, VTAB 등으로 transfer한다.
+논문은 ImageNet, ImageNet-21k, JFT-300M으로 pretrain하고 ImageNet, CIFAR-10/100, Oxford-IIIT Pets, Flowers-102, VTAB으로 transfer한다. 로컬 기본 dataset은 논문에 실제 등장하는 **CIFAR-100**이다. JFT-300M/ImageNet-21k pretraining 자체는 현실적으로 재현하지 않으며 결과를 논문과 동일 성능 재현으로 해석하지 않는다.
 
-로컬 실습에서는 계산비용 때문에 JFT-300M pre-training을 재현하지 않는다. 대신 논문에 실제로 등장하는 공개 downstream dataset(CIFAR-100 또는 CIFAR-10)을 사용해 patch/token 흐름과 fine-tuning 구조를 검증한다. pretrained checkpoint를 사용할 경우 출처와 사전학습 데이터 차이를 명시한다.
+`vit.py`에는 Table 1의 **ViT-B/16: 12 layers, D=768, MLP=3072, 12 heads**를 구현했다. 논문 fine-tuning 결과는 384 resolution을 사용하므로 base path는 384로 둔다. 로컬 sanity training용 `vit_tiny16`도 같은 patch→CLS→position→Transformer data flow를 유지한다.
 
-핵심 요소:
-- image → fixed-size patches
-- flatten + linear projection
-- class token
-- position embedding
-- Transformer encoder
-- MSA + MLP + residual
-- classification head
+## 파일
+- `01_data.py`: CIFAR-100 실제 image/label, 32→384 확인
+- `02_patches.py`: 16×16 patches를 실제로 펼쳐 시각화
+- `vit.py`: patch embedding, CLS token, positional embedding, Transformer encoder
+- `03_model.py`: token/attention shape trace
+- `04_train.py`: CIFAR-100 scaled training (`--model base`는 무거움)
+- `05_analyze.py`: CLS→patch attention overlay
 
-## 진행 순서
-1. `01_data.py`: 실제 downstream dataset image/label 확인
-2. `02_patches.py`: image를 patch sequence로 바꾸고 shape/시각화
-3. `03_model.py`: patch embedding → class token → position → encoder
-4. `04_train.py`: logits / CE loss / fine-tuning 또는 작은-scale training
-5. `05_analyze.py`: attention map, patch size, failure case 관찰
-
-## 완료 기준
-1. Problem: CNN inductive bias 없이 Transformer를 vision에 직접 적용할 수 있는가
-2. Core idea: image patch를 token처럼 다룸
-3. Method: patch embedding + positional embedding + Transformer encoder
-4. Input / GT / Output / Loss: image → class logits, class id → CE
-5. Evidence: 논문 transfer 결과와 작은 실험
-6. My observation: patch/attention/failure case에서 직접 본 현상
+```bash
+python practice/04_vit/01_data.py
+python practice/04_vit/02_patches.py
+python practice/04_vit/03_model.py
+python practice/04_vit/04_train.py --model tiny
+python practice/04_vit/05_analyze.py
+```
