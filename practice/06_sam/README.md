@@ -1,29 +1,30 @@
 # 06. SAM — Segment Anything
 
-이 폴더는 Segment Anything 논문의 promptable segmentation 구조와 zero-shot transfer를 직접 관찰한다.
+재현 수준: **Official pretrained SAM + SA-1B subset analysis**.
 
-## 논문 기준
-논문은 SA-1B(11M images, 1.1B masks)와 data engine을 사용한다. 모델은:
-- image encoder
-- prompt encoder
-- lightweight mask decoder
-로 구성되며 point / box / mask prompt를 처리한다.
+논문은 promptable segmentation task, SAM(image encoder + prompt encoder + lightweight mask decoder), 그리고 **SA-1B: 11M images / 1.1B masks**를 함께 제안한다. 전체 SA-1B를 재학습하는 대신 official SAM checkpoint를 사용하되, 실습 image/GT도 논문 데이터인 **SA-1B의 실제 shard/subset**을 사용한다. 임의 COCO/인터넷 이미지를 기본 dataset으로 대체하지 않는다.
 
-SA-1B 전체 학습 재현은 개인 실습 규모에서 현실적이지 않다. 따라서 공식 pretrained SAM을 사용해 논문의 핵심 동작을 검증한다.
+SA-1B는 research license 동의가 필요한 dataset이므로 자동 다운로드 스크립트로 우회하지 않는다. Meta 공식 SA-1B 페이지에서 라이선스에 동의한 뒤 일부 shard를 `data/06_sam/sa1b/`에 둔다. image 옆에 같은 stem의 JSON annotation이 있어야 한다.
 
-## 진행 순서
-1. `01_image.py`: 실제 이미지 입력과 preprocessing 확인
-2. `02_point_prompt.py`: point prompt → masks / scores
-3. `03_box_prompt.py`: box prompt → mask 비교
-4. `04_ambiguity.py`: 하나의 ambiguous prompt에서 multiple masks 관찰
-5. `05_analyze.py`: prompt 변화, boundary, small object, failure case 분석
+## 준비
+```bash
+bash scripts/setup_sam.sh
+bash scripts/download_sam_vit_b.sh
+# SA-1B 공식 shard/subset을 data/06_sam/sa1b/ 아래에 배치
+```
 
-가능하면 논문에서 사용한 zero-shot segmentation 성격에 맞춰 새로운 이미지 분포에서도 prompt를 바꿔 결과를 본다.
+## 분석
+```bash
+python practice/06_sam/01_image.py
+python practice/06_sam/02_point_prompt.py
+python practice/06_sam/03_box_prompt.py
+python practice/06_sam/04_ambiguity.py
+python practice/06_sam/05_analyze.py
+```
 
-## 완료 기준
-1. Problem: 고정 task용 segmentation을 넘어 prompt로 새로운 segmentation 문제를 풀 수 있는가
-2. Core idea: promptable segmentation + large-scale mask data engine
-3. Method: image encoder / prompt encoder / mask decoder / multiple masks
-4. Input / GT / Output / Loss: image + prompt → masks/scores; training에서는 focal + dice 계열 mask supervision
-5. Evidence: zero-shot downstream 결과와 prompt experiment
-6. My observation: prompt 변화와 ambiguity/failure case에서 직접 본 현상
+- `02_point_prompt.py`: SA-1B GT 내부 foreground point → mask / predicted-IoU / actual IoU
+- `03_box_prompt.py`: SA-1B GT bbox → box-prompt segmentation
+- `04_ambiguity.py`: 논문의 핵심인 single-point **3 multimask outputs**와 IoU ranking
+- `05_analyze.py`: automatic grid-prompt 계열 mask generation을 관찰
+
+논문 training loss는 focal + dice이며, ambiguity 학습에서는 multiple masks 중 minimum loss에 backprop하고 각 mask의 estimated IoU도 예측한다. 이 폴더는 training reproduction이 아니라 pretrained promptable-segmentation behavior 분석이다.
