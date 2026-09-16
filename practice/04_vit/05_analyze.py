@@ -22,11 +22,17 @@ else:
 model.load_state_dict(checkpoint["model"])
 model.eval()
 
-dataset = CIFAR100(
-    "data/04_vit",
-    train=False,
-    download=True,
-)
+try:
+    dataset = CIFAR100(
+        "data/04_vit",
+        train=False,
+        download=False,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "CIFAR-100 is not prepared. Run: "
+        "python scripts/download_torchvision_data.py cifar100"
+    ) from error
 
 image, label = dataset[0]
 
@@ -34,10 +40,7 @@ transform = transforms.Compose(
     [
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.485, 0.456, 0.406],
-            [0.229, 0.224, 0.225],
-        ),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
 )
 
@@ -49,7 +52,6 @@ with torch.no_grad():
         return_attention=True,
     )
 
-# Last encoder block: average all heads, then CLS -> patch attention.
 last_attention = features["attentions"][-1]
 cls_attention = last_attention[0].mean(dim=0)[0, 1:]
 
@@ -66,20 +68,16 @@ attention_map = F.interpolate(
 prediction = logits.argmax(dim=1).item()
 
 fig, axes = plt.subplots(1, 2, figsize=(9, 4))
-
 axes[0].imshow(image.resize((image_size, image_size)))
 axes[0].set_title(
     f"GT={dataset.classes[label]}\n"
     f"Pred={dataset.classes[prediction]}"
 )
-
 axes[1].imshow(image.resize((image_size, image_size)))
 axes[1].imshow(attention_map, alpha=0.55)
 axes[1].set_title("last-layer CLS attention")
-
 for ax in axes:
     ax.axis("off")
-
 plt.tight_layout()
 plt.savefig(output_dir / "05_attention.png", dpi=150)
 plt.show()
