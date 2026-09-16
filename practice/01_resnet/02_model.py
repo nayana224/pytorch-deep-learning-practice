@@ -1,15 +1,33 @@
 import torch
 
-from cifar_resnet import plain_cifar, resnet_cifar
+from resnet import ResidualBlock, make_plain20, make_resnet20
 
 
-if __name__ == "__main__":
-    x = torch.randn(4, 3, 32, 32)
-    for name, model in [("plain20", plain_cifar(20)), ("resnet20", resnet_cifar(20)), ("resnet56", resnet_cifar(56))]:
-        logits, features = model(x, return_features=True)
-        print(f"\n{name}")
-        print("input :", x.shape)
-        for key, value in features.items():
-            print(f"{key:7s}:", value.shape)
-        print("logits:", logits.shape)
-        print("params:", sum(p.numel() for p in model.parameters()))
+x = torch.randn(1, 3, 32, 32)
+
+plain20 = make_plain20()
+resnet20 = make_resnet20()
+
+print("=== Plain-20 ===")
+plain_logits, plain_features = plain20(x, return_features=True)
+for name, feature in plain_features.items():
+    print(name, feature.shape)
+print("logits", plain_logits.shape)
+
+print()
+print("=== ResNet-20 ===")
+res_logits, res_features = resnet20(x, return_features=True)
+for name, feature in res_features.items():
+    print(name, feature.shape)
+print("logits", res_logits.shape)
+
+print()
+print("=== One residual block ===")
+block = ResidualBlock(16, 16)
+feature = torch.randn(1, 16, 32, 32)
+out, residual, identity = block(feature, return_parts=True)
+
+print("x        :", feature.shape)
+print("F(x)     :", residual.shape)
+print("shortcut :", identity.shape)
+print("F(x) + x :", out.shape)

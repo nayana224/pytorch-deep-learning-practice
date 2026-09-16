@@ -1,74 +1,70 @@
 import argparse
-import json
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from cifar_resnet import plain_cifar, resnet_cifar
-from importlib.machinery import SourceFileLoader
-
-_data = SourceFileLoader("resnet_data", "practice/01_resnet/01_data.py").load_module()
-PaperCIFAR10 = _data.PaperCIFAR10
+from data import PaperCIFAR10
+from resnet import make_plain20, make_resnet20
 
 
-def evaluate(model, loader, device):
-    model.eval()
-    total = correct = 0
-    loss_sum = 0.0
-    criterion = nn.CrossEntropyLoss()
-    with torch.no_grad():
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            logits = model(x)
-            loss_sum += criterion(logits, y).item() * y.size(0)
-            correct += (logits.argmax(1) == y).sum().item()
-            total += y.size(0)
-    return loss_sum / total, 100.0 * (1.0 - correct / total)
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", choices=["plain20", "resnet20"], default="resnet20")
+parser.add_argument("--max-iter", type=int, default=64000)
+args = parser.parse_args()
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--kind", choices=["plain", "resnet"], default="resnet")
-    p.add_argument("--depth", type=int, default=20)
-    p.add_argument("--max-iter", type=int, default=64000)
-    p.add_argument("--batch-size", type=int, default=128)
-    args = p.parse_args()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_loader = DataLoader(PaperCIFAR10(True, True), batch_size=args.batch_size, shuffle=True, num_workers=4)
-    test_loader = DataLoader(PaperCIFAR10(False, False), batch_size=256, shuffle=False, num_workers=4)
-    model = (resnet_cifar(args.depth) if args.kind == "resnet" else plain_cifar(args.depth)).to(device)
-    opt = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-    criterion = nn.CrossEntropyLoss()
-    out = Path("outputs/01_resnet")
-    out.mkdir(parents=True, exist_ok=True)
-    history = []
-    step = 0
-    while step < args.max_iter:
-        model.train()
-        for x, y in train_loader:
-            if step >= args.max_iter:
-                break
-            if step in (32000, 48000):
-                for g in opt.param_groups:
-                    g["lr"] *= 0.1
-            x, y = x.to(device), y.to(device)
-            opt.zero_grad(set_to_none=True)
-            loss = criterion(model(x), y)
-            loss.backward()
-            opt.step()
-            step += 1
-            if step % 1000 == 0 or step == args.max_iter:
-                test_loss, test_error = evaluate(model, test_loader, device)
-                row = {"step": step, "train_loss": loss.item(), "test_loss": test_loss, "test_error": test_error, "lr": opt.param_groups[0]["lr"]}
-                history.append(row)
-                print(row)
-    stem = f"{args.kind}{args.depth}"
-    torch.save({"model": model.state_dict(), "kind": args.kind, "depth": args.depth}, out / f"{stem}.pt")
-    (out / f"{stem}.json").write_text(json.dumps(history, indent=2))
+train_set = PaperCIFAR10(train=True, augment=True)
+test_set = PaperCIFAR10(train=False, augment=False)
 
+train_loader = DataLoader(train_set, batch_size=128, shuffle=True, num_workers=4)
+test_loader = DataLoader(test_set, batch_size=256, shuffle=False, num_workers=4)
 
-if __name__ == "__main__":
-    main()
+model = make_resnet20() if args.model == "resnet20" else make_plain20()
+model = model.to(device)
+
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(
+    model.parameters(),
+    lr=0.1,
+    momentum=0.9,
+    weight_decay=1e-4,
+)
+
+step = 0
+while step < args.max_iter:
+    model.train()
+
+    for images, labels in train_loader:
+        if step >= args.max_iter:
+            break
+
+        if step == 32000 or step == 48000:
+            for group in optimizer.param_groups:
+                group["lr"] *= 0.1
+
+        images = images.to(device)
+        labels = labels.to(device)
+
+        logits = model(images)
+        loss = criterion(logits, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        step += 1
+
+        if step % 1000 == 0:
+            print(
+                f"step={step} "
+                f"loss={loss.item():.4f} "
+                f"lr={optimizer.param_groups[0]['lr']:.4f}"
+            )
+
+output_dir = Path("outputs/01_resnet")
+output_dir.mkdir(parents=True, exist_ok=True)
+torch.save(model.state_dict(), output_dir / f"{args.model}.pt")

@@ -1,50 +1,72 @@
-import argparse
-import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from cifar_resnet import plain_cifar, resnet_cifar
-from importlib.machinery import SourceFileLoader
-
-_data = SourceFileLoader("resnet_data", "practice/01_resnet/01_data.py").load_module()
-PaperCIFAR10 = _data.PaperCIFAR10
+from data import PaperCIFAR10
+from resnet import make_plain20, make_resnet20
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--runs", nargs="+", default=["plain20", "resnet20", "resnet56"])
-    args = p.parse_args()
-    out = Path("outputs/01_resnet")
-    fig, ax = plt.subplots(figsize=(7, 4))
-    for run in args.runs:
-        path = out / f"{run}.json"
-        if path.exists():
-            h = json.loads(path.read_text())
-            ax.plot([r["step"] for r in h], [r["test_error"] for r in h], label=run)
-    ax.set_xlabel("iteration")
-    ax.set_ylabel("test error (%)")
-    ax.legend()
-    ax.grid(alpha=0.3)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+output_dir = Path("outputs/01_resnet")
+
+models = {
+    "plain20": make_plain20(),
+    "resnet20": make_resnet20(),
+}
+
+test_set = PaperCIFAR10(train=False, augment=False)
+test_loader = DataLoader(test_set, batch_size=128, shuffle=False)
+
+for name, model in models.items():
+    checkpoint = output_dir / f"{name}.pt"
+    if not checkpoint.exists():
+        print(f"skip {name}: {checkpoint} not found")
+        continue
+
+    model.load_state_dict(torch.load(checkpoint, map_location=device))
+    model = model.to(device)
+    model.eval()
+
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            logits = model(images)
+            prediction = logits.argmax(dim=1)
+
+            correct += (prediction == labels).sum().item()
+            total += labels.numel()
+
+    error = 100.0 * (1.0 - correct / total)
+    print(f"{name} test error: {error:.2f}%")
+
+images, labels = next(iter(test_loader))
+model = models["resnet20"]
+checkpoint = output_dir / "resnet20.pt"
+
+if checkpoint.exists():
+    model.load_state_dict(torch.load(checkpoint, map_location=device))
+    model = model.to(device)
+    model.eval()
+
+    with torch.no_grad():
+        logits = model(images.to(device))
+        prediction = logits.argmax(dim=1).cpu()
+
+    fig, axes = plt.subplots(2, 4, figsize=(10, 5))
+
+    for index, ax in enumerate(axes.flat):
+        image = images[index] + test_set.mean_image
+        image = image.permute(1, 2, 0).clamp(0, 1)
+        ax.imshow(image)
+        ax.set_title(f"GT {labels[index]} / Pred {prediction[index]}")
+        ax.axis("off")
+
     plt.tight_layout()
-    plt.savefig(out / "error_curves.png", dpi=150)
-
-    ckpt_path = out / "resnet20.pt"
-    if ckpt_path.exists():
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = resnet_cifar(20).to(device)
-        model.load_state_dict(torch.load(ckpt_path, map_location=device)["model"])
-        x, y = next(iter(DataLoader(PaperCIFAR10(False, False), batch_size=8)))
-        with torch.no_grad():
-            logits, feats = model(x.to(device), return_features=True)
-        print("pred:", logits.argmax(1).cpu().tolist())
-        print("gt  :", y.tolist())
-        for k, v in feats.items():
-            print(k, "std=", float(v.std()), "mean_abs=", float(v.abs().mean()))
     plt.show()
-
-
-if __name__ == "__main__":
-    main()
