@@ -4,6 +4,15 @@
 
 논문 데이터는 PASCAL VOC 2012와 Cityscapes다. 기본 코드는 실제 **PASCAL VOC 2012** image/semantic mask를 사용한다. 논문의 full modified Xception-65 및 대규모 pretraining/extra annotations를 그대로 재현하는 비용은 크므로 backbone의 middle-flow 반복 수를 줄였지만, paper mechanism인 Xception-style separable conv, output stride, ASPP, low-level 48-channel reduction, concat, 두 개의 3×3 256 decoder conv는 유지한다.
 
+## 데이터 준비
+공부 코드에서는 자동 다운로드하지 않는다.
+
+```bash
+bash scripts/download_voc2012.sh
+```
+
+이미 `VOCdevkit/VOC2012`가 준비되어 있으면 `[skip]`하고, archive 다운로드가 중간에 끊겼다면 가능한 경우 이어받는다.
+
 논문 decoder 설계의 핵심은 OS=16의 DeepLabv3 feature를 low-level feature 크기로 upsample하고, low-level channel을 1×1 conv로 48로 줄인 뒤 concat하여 두 개의 3×3 256 conv로 refinement하는 것이다.
 
 ## 파일
