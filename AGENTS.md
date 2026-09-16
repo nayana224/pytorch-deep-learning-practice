@@ -3,7 +3,7 @@
 ## 프로젝트 목적
 이 저장소는 PyTorch 딥러닝 학습용 실습 저장소다. 코드 완성 자체보다 논문의 문제의식, 데이터 흐름, 모델 구조, loss, evidence를 직접 실행하며 이해하는 것을 우선한다.
 
-사용자가 직접 코드를 타이핑하며 공부하는 것이 핵심 목표다. AI/Codex는 대리 구현자가 아니라 실습 설계자, 코드 리뷰어, 디버깅 파트너 역할을 우선한다.
+사용자가 코드를 읽고, 실행하고, 핵심 부분을 직접 다시 타이핑하며 이해하는 것이 목표다. AI/Codex는 대리 구현자에 그치지 않고 실습 설계자, 코드 리뷰어, 디버깅 파트너 역할을 우선한다.
 
 ## 저장소 역할 분리
 - `lessons/`: MLP, CNN, Attention, Transformer 등 일반 딥러닝 기초와 문법 실습
@@ -22,27 +22,26 @@
 - 비교 실험에서는 한 번에 한 조건만 바꾼다.
 - accuracy 한 숫자보다 tensor shape, feature, mask, attention, prediction, error case를 적극적으로 관찰한다.
 
-## 직접 타이핑 실습 방식
+## 코드 읽기 + 재타이핑 실습 방식
 `practice/`는 TODO 빈칸 채우기 방식이 아니다.
 
-다음 사이클을 반복한다.
-1. AI가 현재 단계에 필요한 실제 코드를 대화에서 제시한다.
-2. 사용자가 그 코드를 직접 `.py` 파일에 타이핑한다.
-3. 실행 전에 가능한 경우 shape, 출력 의미, 변화 방향을 예상한다.
-4. 사용자가 직접 실행한다.
-5. 실행 결과와 이해되지 않는 줄을 질문한다.
-6. AI가 결과를 해석하고 코드의 이유, failure mode, 다음 관찰 지점을 설명한다.
-7. 이해가 끝나면 다음 단계로 넘어간다.
+기본 사이클:
+1. AI가 해당 단계의 **실행 가능한 전체 파일 코드**를 제시한다.
+2. 사용자는 먼저 코드를 읽으며 data flow와 핵심 연산을 분석한다.
+3. 시각화/print/checkpoint 지점을 코드 안에 명확히 둔다.
+4. 사용자가 직접 실행하고 shape, feature, prediction, failure case를 관찰한다.
+5. 이해되지 않는 줄이나 메커니즘을 질문한다.
+6. AI가 코드의 이유, 논문과의 대응, failure mode를 설명한다.
+7. 충분히 이해한 뒤 사용자가 핵심 코드를 스스로 다시 타이핑해보며 복습한다.
 
 원칙:
-- 전체 프로젝트의 완성 코드를 처음부터 한 번에 던지지 않는다.
-- API 이름을 맞히는 퀴즈처럼 TODO만 남기지도 않는다.
-- 파일 중간에 어디에 붙여야 할지 헷갈릴 수 있으므로, 한 단계가 진행될 때는 해당 `.py` 파일의 **현재 전체 코드**를 통째로 제시하는 것을 기본으로 한다.
-- 단, 전체 파일을 주더라도 한 번에 새로 추가되는 개념은 가능한 한 하나의 작은 학습 단위로 제한한다.
-- 사용자는 전체 파일을 직접 타이핑하거나 현재 파일과 비교해 갱신하고, 이해되지 않는 부분을 질문한다.
-- 최종 파일에는 사용자가 단계적으로 직접 작성한 코드가 남도록 한다.
-- 이미 충분히 이해한 boilerplate는 반복 설명하지 않는다.
-- 데이터 전처리처럼 라이브러리 함수가 내부 동작을 숨길 수 있는 부분은 첫 실습에서 명시적 tensor/NumPy 연산으로 한 번 확인한 뒤, 동일 동작의 `torchvision.transforms` 등 라이브러리 방식과 대응시킨다.
+- 학습 효율을 위해 필요한 경우 한 단계의 **전체 코드**를 처음부터 제시해도 된다.
+- 단, 프로젝트 전체를 한 번에 던지기보다 파일/기능 단위로 나눈다.
+- 시각화 가능한 핵심 메커니즘은 반드시 시각화 또는 shape/log 출력 포인트를 둔다.
+- 사용자가 손으로 구현하는 것 자체보다, 코드의 data flow와 왜 그렇게 동작하는지를 설명할 수 있는지를 더 중요하게 본다.
+- 직접 타이핑은 처음부터 모든 boilerplate를 반복하는 용도가 아니라, 이해가 끝난 뒤 핵심 구조를 자기 손으로 재구성하는 복습 단계로 사용한다.
+- API 이름을 맞히는 퀴즈처럼 TODO만 남기지 않는다.
+- 데이터 전처리처럼 라이브러리 함수가 내부 동작을 숨길 수 있는 부분은 한 번 명시적 tensor/NumPy 연산으로 확인한 뒤, 동일 동작의 `torchvision.transforms` 등 라이브러리 방식과 대응시킨다.
 
 ## 현재 practice 구조
 ```text
@@ -78,7 +77,7 @@ practice/
 - 현재 관찰상 `0`은 membrane/boundary, `255`는 cell interior로 해석한다.
 - raw `uint8` image/label을 PyTorch 학습 입력으로 바꾸는 과정을 직접 확인한다: image는 `float32` 및 0~1 스케일로 변환하고 channel 축을 추가하며, GT는 논문 class 의미를 유지하면서 학습용 class/tensor 형태로 변환한다.
 - 변환 전후에 반드시 shape, dtype, value range, unique value를 출력해 확인한다.
-- 다음 단계는 실제 U-Net을 만들기 전에 dummy batch와 dummy logits를 만들어 `Input [B,1,H,W]`, `GT [B,H,W]`, `logits [B,2,H,W]`가 `CrossEntropyLoss`에서 연결되는지 직접 검증한다.
+- 실제 U-Net 구현에서는 contracting path / bottleneck / expanding path / crop+concat / final 1x1 conv를 전체 코드로 본 뒤, 각 단계의 tensor shape와 skip feature를 시각화/출력하며 분석한다.
 - Figure 1 input tile 572x572와 dataset image 512x512를 구분
 - 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
 - 이후 weighted loss, elastic deformation, overlap-tile을 논문 순서로 추가
