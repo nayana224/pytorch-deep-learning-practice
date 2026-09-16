@@ -1,18 +1,85 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import torch
-from torchvision.datasets import CIFAR100
+import torch.nn.functional as F
 from torchvision import transforms
-from vit import vit_b16,vit_tiny16
+from torchvision.datasets import CIFAR100
 
-OUT=Path("outputs/04_vit"); ckpt=torch.load(OUT/"tiny.pt",map_location="cpu"); size=ckpt["size"]
-model=vit_tiny16(100,size) if ckpt["variant"]=="tiny" else vit_b16(100,size); model.load_state_dict(ckpt["model"]); model.eval()
-ds=CIFAR100("data/04_vit",train=False,download=True); image,label=ds[0]
-tf=transforms.Compose([transforms.Resize((size,size)),transforms.ToTensor(),transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])]); x=tf(image).unsqueeze(0)
-with torch.no_grad(): logits,f=model(x,return_attention=True)
-att=f["attentions"][-1][0].mean(0)[0,1:]; grid=size//16; att=att.reshape(grid,grid)
-att=torch.nn.functional.interpolate(att[None,None],size=(size,size),mode="bilinear",align_corners=False)[0,0]
-fig,axes=plt.subplots(1,2,figsize=(9,4)); axes[0].imshow(image.resize((size,size))); axes[0].set_title(f"GT={ds.classes[label]} pred={ds.classes[logits.argmax(1).item()]}")
-axes[1].imshow(image.resize((size,size))); axes[1].imshow(att,cmap="magma",alpha=.55); axes[1].set_title("last-layer CLS attention")
-for ax in axes: ax.axis("off")
-plt.tight_layout(); plt.savefig(OUT/"05_attention.png",dpi=150); plt.show()
+from vit import vit_b16, vit_tiny16
+
+
+output_dir = Path("outputs/04_vit")
+checkpoint = torch.load(output_dir / "tiny.pt", map_location="cpu")
+
+image_size = checkpoint["size"]
+
+if checkpoint["variant"] == "tiny":
+    model = vit_tiny16(100, image_size)
+else:
+    model = vit_b16(100, image_size)
+
+model.load_state_dict(checkpoint["model"])
+model.eval()
+
+dataset = CIFAR100(
+    "data/04_vit",
+    train=False,
+    download=True,
+)
+
+image, label = dataset[0]
+
+transform = transforms.Compose(
+    [
+        transforms.Resize((image_size, image_size)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.485, 0.456, 0.406],
+            [0.229, 0.224, 0.225],
+        ),
+    ]
+)
+
+x = transform(image).unsqueeze(0)
+
+with torch.no_grad():
+    logits, features = model(
+        x,
+        return_attention=True,
+    )
+
+# Last encoder block: average all heads, then CLS -> patch attention.
+last_attention = features["attentions"][-1]
+cls_attention = last_attention[0].mean(dim=0)[0, 1:]
+
+patch_grid = image_size // 16
+cls_attention = cls_attention.reshape(patch_grid, patch_grid)
+
+attention_map = F.interpolate(
+    cls_attention[None, None],
+    size=(image_size, image_size),
+    mode="bilinear",
+    align_corners=False,
+)[0, 0]
+
+prediction = logits.argmax(dim=1).item()
+
+fig, axes = plt.subplots(1, 2, figsize=(9, 4))
+
+axes[0].imshow(image.resize((image_size, image_size)))
+axes[0].set_title(
+    f"GT={dataset.classes[label]}\n"
+    f"Pred={dataset.classes[prediction]}"
+)
+
+axes[1].imshow(image.resize((image_size, image_size)))
+axes[1].imshow(attention_map, alpha=0.55)
+axes[1].set_title("last-layer CLS attention")
+
+for ax in axes:
+    ax.axis("off")
+
+plt.tight_layout()
+plt.savefig(output_dir / "05_attention.png", dpi=150)
+plt.show()

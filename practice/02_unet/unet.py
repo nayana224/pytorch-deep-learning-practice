@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class DoubleConv(nn.Module):
-    """3x3 valid conv + ReLU, twice."""
+    """3x3 valid convolution + ReLU, twice."""
 
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -40,6 +40,11 @@ def center_crop_target(target, logits):
     left = (source_w - target_w) // 2
 
     return target[:, top : top + target_h, left : left + target_w]
+
+
+def print_feature_shapes(features):
+    for name, feature in features.items():
+        print(f"{name:>10}: {tuple(feature.shape)}")
 
 
 class UNet(nn.Module):
@@ -79,27 +84,31 @@ class UNet(nn.Module):
         e4 = self.enc4(self.pool(e3))
 
         # Bottom
-        b = self.bottom(self.pool(e4))
+        bottom = self.bottom(self.pool(e4))
 
-        # Decoder 4: upsample -> crop encoder feature -> concat -> conv
-        u4 = self.up4(b)
-        c4 = center_crop(e4, u4)
-        d4 = self.dec4(torch.cat([c4, u4], dim=1))
+        # Decoder stage 4
+        up4 = self.up4(bottom)
+        crop4 = center_crop(e4, up4)
+        concat4 = torch.cat([crop4, up4], dim=1)
+        d4 = self.dec4(concat4)
 
-        # Decoder 3
-        u3 = self.up3(d4)
-        c3 = center_crop(e3, u3)
-        d3 = self.dec3(torch.cat([c3, u3], dim=1))
+        # Decoder stage 3
+        up3 = self.up3(d4)
+        crop3 = center_crop(e3, up3)
+        concat3 = torch.cat([crop3, up3], dim=1)
+        d3 = self.dec3(concat3)
 
-        # Decoder 2
-        u2 = self.up2(d3)
-        c2 = center_crop(e2, u2)
-        d2 = self.dec2(torch.cat([c2, u2], dim=1))
+        # Decoder stage 2
+        up2 = self.up2(d3)
+        crop2 = center_crop(e2, up2)
+        concat2 = torch.cat([crop2, up2], dim=1)
+        d2 = self.dec2(concat2)
 
-        # Decoder 1
-        u1 = self.up1(d2)
-        c1 = center_crop(e1, u1)
-        d1 = self.dec1(torch.cat([c1, u1], dim=1))
+        # Decoder stage 1
+        up1 = self.up1(d2)
+        crop1 = center_crop(e1, up1)
+        concat1 = torch.cat([crop1, up1], dim=1)
+        d1 = self.dec1(concat1)
 
         logits = self.final(d1)
 
@@ -109,13 +118,24 @@ class UNet(nn.Module):
                 "enc2": e2,
                 "enc3": e3,
                 "enc4": e4,
-                "bottom": b,
-                "up4": u4,
-                "crop4": c4,
+                "bottleneck": bottom,
+                "up4": up4,
+                "crop4": crop4,
+                "concat4": concat4,
                 "dec4": d4,
+                "up3": up3,
+                "crop3": crop3,
+                "concat3": concat3,
                 "dec3": d3,
+                "up2": up2,
+                "crop2": crop2,
+                "concat2": concat2,
                 "dec2": d2,
+                "up1": up1,
+                "crop1": crop1,
+                "concat1": concat1,
                 "dec1": d1,
+                "logits": logits,
             }
 
         return logits

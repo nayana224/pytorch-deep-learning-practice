@@ -1,27 +1,138 @@
 import argparse
 from pathlib import Path
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchvision.datasets import CIFAR100
 from torchvision import transforms
-from vit import vit_b16,vit_tiny16
+from torchvision.datasets import CIFAR100
 
-p=argparse.ArgumentParser(); p.add_argument("--model",choices=["base","tiny"],default="tiny"); p.add_argument("--epochs",type=int,default=20); p.add_argument("--batch-size",type=int,default=64); a=p.parse_args()
-size=384 if a.model=="base" else 224
-train_tf=transforms.Compose([transforms.Resize((size,size)),transforms.RandomHorizontalFlip(),transforms.ToTensor(),transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])])
-test_tf=transforms.Compose([transforms.Resize((size,size)),transforms.ToTensor(),transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])])
-train=DataLoader(CIFAR100("data/04_vit",train=True,download=True,transform=train_tf),batch_size=a.batch_size,shuffle=True,num_workers=4)
-test=DataLoader(CIFAR100("data/04_vit",train=False,download=True,transform=test_tf),batch_size=a.batch_size,shuffle=False,num_workers=4)
-dev=torch.device("cuda" if torch.cuda.is_available() else "cpu"); model=(vit_b16(100,size) if a.model=="base" else vit_tiny16(100,size)).to(dev)
-opt=torch.optim.Adam(model.parameters(),lr=3e-4,betas=(0.9,0.999),weight_decay=0.1); loss_fn=nn.CrossEntropyLoss(); OUT=Path("outputs/04_vit"); OUT.mkdir(parents=True,exist_ok=True)
-for ep in range(a.epochs):
-    model.train(); total=0
-    for x,y in train:
-        x,y=x.to(dev),y.to(dev); opt.zero_grad(set_to_none=True); loss=loss_fn(model(x),y); loss.backward(); opt.step(); total+=loss.item()
-    model.eval(); correct=n=0
+from vit import vit_b16, vit_tiny16
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", choices=["base", "tiny"], default="tiny")
+parser.add_argument("--epochs", type=int, default=20)
+parser.add_argument("--batch-size", type=int, default=64)
+args = parser.parse_args()
+
+image_size = 384 if args.model == "base" else 224
+
+train_transform = transforms.Compose(
+    [
+        transforms.Resize((image_size, image_size)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.485, 0.456, 0.406],
+            [0.229, 0.224, 0.225],
+        ),
+    ]
+)
+
+test_transform = transforms.Compose(
+    [
+        transforms.Resize((image_size, image_size)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.485, 0.456, 0.406],
+            [0.229, 0.224, 0.225],
+        ),
+    ]
+)
+
+train_set = CIFAR100(
+    "data/04_vit",
+    train=True,
+    download=True,
+    transform=train_transform,
+)
+
+test_set = CIFAR100(
+    "data/04_vit",
+    train=False,
+    download=True,
+    transform=test_transform,
+)
+
+train_loader = DataLoader(
+    train_set,
+    batch_size=args.batch_size,
+    shuffle=True,
+    num_workers=4,
+)
+
+test_loader = DataLoader(
+    test_set,
+    batch_size=args.batch_size,
+    shuffle=False,
+    num_workers=4,
+)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+if args.model == "base":
+    model = vit_b16(num_classes=100, image_size=image_size)
+else:
+    model = vit_tiny16(num_classes=100, image_size=image_size)
+
+model = model.to(device)
+
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=3e-4,
+    betas=(0.9, 0.999),
+    weight_decay=0.1,
+)
+
+for epoch in range(args.epochs):
+    model.train()
+    train_loss = 0.0
+
+    for images, labels in train_loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        logits = model(images)
+        loss = criterion(logits, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item()
+
+    model.eval()
+    correct = 0
+    total = 0
+
     with torch.no_grad():
-        for x,y in test:
-            y=y.to(dev); pred=model(x.to(dev)).argmax(1); correct+=(pred==y).sum().item(); n+=y.numel()
-    print(f"epoch={ep+1} loss={total/len(train):.4f} acc={correct/n:.4f}")
-torch.save({"model":model.state_dict(),"variant":a.model,"size":size},OUT/f"{a.model}.pt")
+        for images, labels in test_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            logits = model(images)
+            prediction = logits.argmax(dim=1)
+
+            correct += (prediction == labels).sum().item()
+            total += labels.numel()
+
+    accuracy = correct / total
+    print(
+        f"epoch={epoch + 1} "
+        f"loss={train_loss / len(train_loader):.4f} "
+        f"acc={accuracy:.4f}"
+    )
+
+output_dir = Path("outputs/04_vit")
+output_dir.mkdir(parents=True, exist_ok=True)
+
+torch.save(
+    {
+        "model": model.state_dict(),
+        "variant": args.model,
+        "size": image_size,
+    },
+    output_dir / f"{args.model}.pt",
+)

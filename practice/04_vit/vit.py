@@ -13,9 +13,9 @@ class PatchEmbedding(nn.Module):
         )
 
     def forward(self, x):
-        x = self.projection(x)
-        x = x.flatten(2)
-        x = x.transpose(1, 2)
+        x = self.projection(x)      # [B, D, H/P, W/P]
+        x = x.flatten(2)            # [B, D, N]
+        x = x.transpose(1, 2)       # [B, N, D]
         return x
 
 
@@ -69,9 +69,14 @@ class VisionTransformer(nn.Module):
     ):
         super().__init__()
 
-        self.patch_embedding = PatchEmbedding(image_size, patch_size, hidden_dim)
+        self.patch_embedding = PatchEmbedding(
+            image_size,
+            patch_size,
+            hidden_dim,
+        )
 
         num_patches = (image_size // patch_size) ** 2
+
         self.class_token = nn.Parameter(torch.zeros(1, 1, hidden_dim))
         self.position_embedding = nn.Parameter(
             torch.zeros(1, num_patches + 1, hidden_dim)
@@ -79,7 +84,11 @@ class VisionTransformer(nn.Module):
 
         self.encoder_blocks = nn.ModuleList(
             [
-                TransformerEncoderBlock(hidden_dim, num_heads, mlp_dim)
+                TransformerEncoderBlock(
+                    hidden_dim,
+                    num_heads,
+                    mlp_dim,
+                )
                 for _ in range(depth)
             ]
         )
@@ -87,7 +96,15 @@ class VisionTransformer(nn.Module):
         self.norm = nn.LayerNorm(hidden_dim)
         self.head = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, x, return_attention=False):
+        nn.init.trunc_normal_(self.class_token, std=0.02)
+        nn.init.trunc_normal_(self.position_embedding, std=0.02)
+
+    def forward(
+        self,
+        x,
+        return_features=False,
+        return_attention=False,
+    ):
         patch_tokens = self.patch_embedding(x)
 
         cls_token = self.class_token.expand(x.shape[0], -1, -1)
@@ -98,17 +115,24 @@ class VisionTransformer(nn.Module):
 
         for block in self.encoder_blocks:
             if return_attention:
-                tokens, attention = block(tokens, return_attention=True)
+                tokens, attention = block(
+                    tokens,
+                    return_attention=True,
+                )
                 attention_maps.append(attention)
             else:
                 tokens = block(tokens)
 
         tokens = self.norm(tokens)
-        cls_token = tokens[:, 0]
-        logits = self.head(cls_token)
+        logits = self.head(tokens[:, 0])
 
-        if return_attention:
-            return logits, patch_tokens, tokens, attention_maps
+        if return_features or return_attention:
+            return logits, {
+                "patches": patch_tokens,
+                "tokens": tokens,
+                "attentions": attention_maps,
+            }
+
         return logits
 
 
@@ -121,4 +145,17 @@ def vit_b16(num_classes=100, image_size=384):
         depth=12,
         num_heads=12,
         mlp_dim=3072,
+    )
+
+
+def vit_tiny16(num_classes=100, image_size=224):
+    """Scaled local variant with the same patch/token/encoder flow."""
+    return VisionTransformer(
+        image_size=image_size,
+        patch_size=16,
+        num_classes=num_classes,
+        hidden_dim=192,
+        depth=12,
+        num_heads=3,
+        mlp_dim=768,
     )

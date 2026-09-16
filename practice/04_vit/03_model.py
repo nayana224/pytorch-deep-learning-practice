@@ -1,11 +1,29 @@
 import torch
+
 from vit import vit_b16, vit_tiny16
 
-for name,model,size in [("ViT-B/16",vit_b16(100,384),384),("scaled-tiny/16",vit_tiny16(100,224),224)]:
-    x=torch.randn(1,3,size,size)
+
+models = [
+    ("ViT-B/16", vit_b16(num_classes=100, image_size=384), 384),
+    ("scaled tiny/16", vit_tiny16(num_classes=100, image_size=224), 224),
+]
+
+for name, model, image_size in models:
+    x = torch.randn(1, 3, image_size, image_size)
     model.eval()
-    with torch.no_grad(): logits,f=model(x,return_features=True,return_attention=True)
-    print("\n",name)
-    print("input:",x.shape,"patch embeddings:",f["patches"].shape,"tokens(+CLS):",f["tokens"].shape,"logits:",logits.shape)
-    print("last attention:",f["attentions"][-1].shape)
-    print("params:",sum(p.numel() for p in model.parameters()))
+
+    with torch.no_grad():
+        logits, features = model(
+            x,
+            return_features=True,
+            return_attention=True,
+        )
+
+    print()
+    print("===", name, "===")
+    print("input            :", x.shape)
+    print("patch embeddings :", features["patches"].shape)
+    print("tokens + CLS     :", features["tokens"].shape)
+    print("logits           :", logits.shape)
+    print("last attention   :", features["attentions"][-1].shape)
+    print("parameters       :", sum(p.numel() for p in model.parameters()))
