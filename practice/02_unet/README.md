@@ -1,136 +1,210 @@
 # 02. U-Net — Convolutional Networks for Biomedical Image Segmentation
 
-이 폴더는 U-Net 논문의 실제 실험 흐름을 PyTorch로 따라간다.
+이 폴더는 U-Net 논문의 핵심 구조와 ISBI 2012 EM 데이터 흐름을 PyTorch로 한 번에 실행하고 분석하기 위한 실습이다.
 
-## 재현 수준
-기본 목표는 **Faithful reproduction에 가까운 학습 실습**이다.
+## 현재 실습 전략
 
-가능하면 논문과 동일하게 다음을 따른다.
-- dataset: ISBI 2012 EM segmentation challenge
-- architecture: original U-Net의 valid convolution / crop + concat 구조
-- task: pixel-wise binary segmentation
-- augmentation: elastic deformation
-- loss: pixel-wise cross entropy + boundary-aware weight map
-- evaluation: challenge 지표를 우선 이해하고, IoU/Dice는 보조 지표로 사용
+이번 단계부터는 코드를 작은 조각으로 이어 붙이기보다 **실행 가능한 전체 파이프라인을 먼저 제공하고, 사용자가 코드를 읽고 시각화/shape/output을 분석한 뒤 핵심 부분을 다시 타이핑하는 방식**으로 진행한다.
 
-단, 원 논문의 Caffe training 환경과 전체 실험 서버를 그대로 복원하는 것이 목적은 아니다. PyTorch에서 데이터 흐름과 핵심 메커니즘을 직접 재구성한다.
+논문에서 직접 확인할 핵심은 다음과 같다.
 
-## 1. Dataset
+- contracting path: valid 3x3 conv + ReLU, 2x2 max pool
+- channel: 64 → 128 → 256 → 512 → 1024
+- expanding path: up-convolution → encoder feature crop → channel concat → double conv
+- final 1x1 convolution
+- pixel-wise softmax + cross entropy
+- 매우 적은 biomedical training data
+- elastic deformation augmentation
+- touching cell separation을 강조하는 boundary-aware weighted loss
 
-### 공식 source
-ISBI 2012 challenge의 원래 서버는 종료되었지만, ImageJ에서 training/test data archive를 계속 제공한다.
+논문은 contracting path와 symmetric expanding path를 사용하고, valid convolution 때문에 encoder feature를 crop한 뒤 decoder feature와 concatenate한다. 최종 1x1 convolution은 64-component feature를 class logits로 바꾼다. 전체는 23개의 convolutional layer로 구성된다.
 
-- challenge 설명: `https://imagej.net/events/isbi-2012-segmentation-challenge`
-- dataset archive: `https://downloads.imagej.net/ISBI-2012-challenge.zip`
+## Dataset
 
-논문/챌린지 기준 training data는 다음과 같다.
-- 30개의 serial-section TEM slice
-- 각 slice 크기: 512 x 512
-- Drosophila first instar larva ventral nerve cord
-- 각 training slice에 binary segmentation label 존재
-- label은 white=segmented object 내부, black=주로 membrane/background
-- test volume은 같은 specimen의 다른 volume이며 공개 GT는 제공되지 않음
+- ISBI 2012 EM segmentation challenge
+- train volume: 30 slices
+- slice size: 512 x 512
+- raw image: grayscale EM
+- GT: white=cell interior, black=membrane
 
-### 저장 위치
-repo root에서 아래 위치를 사용한다.
-
-```text
-data/
-└── 02_unet/
-    └── isbi2012/
-        └── <archive에서 풀린 TIFF files>
-```
-
-`data/`는 `.gitignore`에 포함되어 있으므로 원본 dataset을 GitHub에 commit하지 않는다.
-
-### 다운로드
-repo root에서 실행:
+다운로드:
 
 ```bash
 bash scripts/download_isbi2012.sh
 ```
 
-직접 받고 싶으면:
-
-```bash
-mkdir -p data/02_unet/isbi2012
-cd data/02_unet/isbi2012
-wget https://downloads.imagej.net/ISBI-2012-challenge.zip
-unzip ISBI-2012-challenge.zip
-```
-
-다운로드 후에는 먼저 파일명을 확인한다.
-
-```bash
-find data/02_unet/isbi2012 -maxdepth 2 -type f | sort
-```
-
-archive의 실제 파일명을 코드에서 추측하지 않는다. 먼저 `find` 결과를 보고 `01_data.py`의 경로를 정한다.
-
-## 2. 첫 실습: `01_data.py`
-아직 모델을 만들지 않는다.
-
-첫 목표는 raw dataset 자체를 이해하는 것이다.
-
-확인 순서:
-1. training image TIFF stack 열기
-2. GT TIFF stack 열기
-3. stack shape 확인
-4. slice 하나의 shape / dtype / min / max 확인
-5. GT unique value 확인
-6. image와 같은 index의 GT를 나란히 표시
-7. foreground/background pixel 비율 확인
-
-반드시 이해할 것:
-- `[30, 512, 512]`에서 각 축이 무엇을 의미하는가?
-- grayscale image와 binary GT의 dtype/range가 왜 다른가?
-- GT의 white/black pixel이 의미하는 class는 무엇인가?
-- classification label과 segmentation GT가 어떻게 다른가?
-
-## 3. Network
-`02_model.py`에서는 논문 Figure 1의 original U-Net을 직접 구현한다.
-
-핵심 흐름:
+현재 확인된 archive 파일:
 
 ```text
-input
-→ valid 3x3 conv + ReLU
-→ valid 3x3 conv + ReLU
-→ 2x2 max pool
-→ contracting path
-→ bottleneck
-→ up-convolution
-→ encoder feature crop
-→ channel-wise concat
-→ expansive path
-→ 1x1 conv
-→ pixel logits
+data/02_unet/isbi2012/
+├── train-volume.tif
+├── train-labels.tif
+├── test-volume.tif
+├── test-labels.tif
+└── challenge-error-metrics.bsh
 ```
 
-주의: dataset slice `512x512`와 Figure 1의 network input tile `572x572 → 388x388 output`은 같은 개념이 아니다. dataset을 읽은 뒤 tile/context handling을 별도로 확인한다.
+TIFF는 PNG로 변환하지 않고 multi-page stack 그대로 사용한다.
 
-## 4. Training / Analysis
+## 파일 구조
 
-`03_train.py`
-- raw image / GT → tensor
-- model output과 GT spatial alignment
-- pixel-wise loss
-- backward / optimizer
-- 작은 subset overfit sanity check
-- 이후 논문의 weighted loss / elastic deformation 추가
+```text
+practice/02_unet/
+├── 01_data.py
+├── 02_model.py
+├── 03_train.py
+├── 04_analyze.py
+├── unet.py
+└── README.md
+```
 
-`04_analyze.py`
-- input / GT / prediction
-- probability map
+### `01_data.py`
+
+raw TIFF stack을 읽고 다음을 확인한다.
+
+- stack shape / dtype / min / max
+- GT unique values
+- membrane / cell-interior pixel ratio
+- NumPy → PyTorch tensor 변환
+- input / GT / membrane overlay 시각화
+
+실행:
+
+```bash
+python practice/02_unet/01_data.py
+```
+
+### `unet.py`
+
+원 논문 형태에 가까운 U-Net model definition이다.
+
+- valid convolution (`padding=0`)
+- four encoder stages
+- bottleneck
+- four transposed-convolution decoder stages
+- center crop
+- channel concat
+- final 1x1 classifier
+- `return_features=True`로 intermediate feature 관찰 가능
+
+### `02_model.py`
+
+논문 Figure 1의 `572x572 → 388x388` shape 흐름을 검증한다.
+
+실행:
+
+```bash
+python practice/02_unet/02_model.py
+```
+
+특히 확인할 feature:
+
+- `enc1`, `enc4`
+- `bottleneck`
+- `up4`
+- `crop4`
+- `concat4`
+- `dec1`
+
+생성되는 시각화:
+
+```text
+outputs/02_unet/02_model_feature_overview.png
+outputs/02_unet/02_model_crop_concat.png
+```
+
+## Training baseline
+
+`03_train.py`는 실제 30장의 EM image/GT를 model과 연결한다.
+
+```bash
+python practice/02_unet/03_train.py --epochs 10
+```
+
+현재 baseline 설정:
+
+- first 24 slices: train
+- last 6 slices: validation
+- batch size: 1
+- optimizer: SGD
+- momentum: 0.99
+- loss: standard `CrossEntropyLoss`
+- augmentation: flip + 90-degree rotation
+- metric: membrane IoU
+
+중요: 이것은 **원 논문 training의 완전 재현이 아니다.**
+
+논문은 pixel-wise cross entropy에 class-frequency weighting과 touching-cell separation border를 강조하는 per-pixel weight map을 사용했고, elastic deformation을 강하게 사용했다. 현재 baseline은 architecture/data-flow를 먼저 분석하기 위해 boundary-aware weight map과 elastic deformation을 아직 넣지 않았다.
+
+또한 dataset이 serial-section volume이므로 24/6 slice split은 독립적인 benchmark split이라고 주장할 수 없다. 학습 파이프라인 검증용이다.
+
+checkpoint:
+
+```text
+outputs/02_unet/unet_baseline.pt
+```
+
+training curve:
+
+```text
+outputs/02_unet/03_train_curves.png
+```
+
+## Prediction / feature analysis
+
+training 후:
+
+```bash
+python practice/02_unet/04_analyze.py
+```
+
+확인 항목:
+
+- center-cropped input field-of-view
+- aligned GT
+- membrane probability map
+- prediction
+- prediction overlay
 - error map
-- encoder/decoder feature
-- failure case
-- challenge metric 개념과 IoU/Dice 비교
+- membrane IoU / Dice
+- encoder / bottleneck / skip / decoder feature
+
+생성되는 파일:
+
+```text
+outputs/02_unet/04_prediction_analysis.png
+outputs/02_unet/04_feature_analysis.png
+```
+
+## 왜 GT를 crop하는가?
+
+original U-Net은 valid convolution을 사용하므로 model output이 input보다 작다.
+
+Figure 1 예시:
+
+```text
+input  : 572 x 572
+output : 388 x 388
+```
+
+따라서 loss 계산 시 full-size GT에서 output과 같은 central field-of-view를 crop해 alignment해야 한다.
+
+현재 512x512 dataset slice를 그대로 model input으로 넣으면 output spatial size 역시 더 작아지며, `center_crop_target()`이 GT를 output 크기에 맞춘다.
 
 ## 완료 기준
-1. Problem: sliding-window CNN의 중복 계산과 localization/context trade-off
-2. Core idea: contracting path + symmetric expanding path + skip feature
+
+1. Problem: sliding-window CNN의 redundant computation과 localization/context trade-off
+2. Core idea: contracting path + symmetric expanding path + high-resolution skip feature
 3. Method: valid conv / pool / up-conv / crop / concat / 1x1 conv
-4. Input / GT / Output / Loss: EM image → logits, segmentation map → pixel loss
-5. Evidence: 논문 지표/결과와 직접 prediction 관찰
-6. My observation: feature와 failure case에서 직접 본 현상
+4. Input / GT / Output / Loss: EM image → pixel logits, segmentation map → aligned pixel-wise CE
+5. Evidence: 논문 결과와 직접 얻은 probability/prediction/feature 비교
+6. My observation: crop+concat, feature 변화, membrane failure case를 직접 설명
+
+## 다음 fidelity 단계
+
+전체 baseline을 이해한 뒤 논문 재현도를 높이는 순서는 다음과 같다.
+
+1. elastic deformation
+2. boundary-aware per-pixel weight map
+3. overlap-tile inference + mirror padding
+4. challenge metric과 논문 결과 비교
