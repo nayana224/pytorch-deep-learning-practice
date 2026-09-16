@@ -26,7 +26,7 @@
 `practice/`는 TODO 빈칸 채우기 방식이 아니다.
 
 기본 사이클:
-1. AI가 해당 단계의 **실행 가능한 전체 파일 코드**를 제시한다.
+1. AI가 해당 논문 실습에 필요한 **실행 가능한 전체 코드/파일 세트**를 먼저 구성할 수 있다.
 2. 사용자는 먼저 코드를 읽으며 data flow와 핵심 연산을 분석한다.
 3. 시각화/print/checkpoint 지점을 코드 안에 명확히 둔다.
 4. 사용자가 직접 실행하고 shape, feature, prediction, failure case를 관찰한다.
@@ -35,13 +35,13 @@
 7. 충분히 이해한 뒤 사용자가 핵심 코드를 스스로 다시 타이핑해보며 복습한다.
 
 원칙:
-- 학습 효율을 위해 필요한 경우 한 단계의 **전체 코드**를 처음부터 제시해도 된다.
-- 단, 프로젝트 전체를 한 번에 던지기보다 파일/기능 단위로 나눈다.
+- 사용자가 원하면 한 논문 폴더의 실행 가능한 전체 파이프라인을 한 번에 완성해도 된다.
+- 전체 코드를 주더라도 파일별 역할과 시각화 지점을 명확히 분리한다.
 - 시각화 가능한 핵심 메커니즘은 반드시 시각화 또는 shape/log 출력 포인트를 둔다.
 - 사용자가 손으로 구현하는 것 자체보다, 코드의 data flow와 왜 그렇게 동작하는지를 설명할 수 있는지를 더 중요하게 본다.
 - 직접 타이핑은 처음부터 모든 boilerplate를 반복하는 용도가 아니라, 이해가 끝난 뒤 핵심 구조를 자기 손으로 재구성하는 복습 단계로 사용한다.
 - API 이름을 맞히는 퀴즈처럼 TODO만 남기지 않는다.
-- 데이터 전처리처럼 라이브러리 함수가 내부 동작을 숨길 수 있는 부분은 한 번 명시적 tensor/NumPy 연산으로 확인한 뒤, 동일 동작의 `torchvision.transforms` 등 라이브러리 방식과 대응시킨다.
+- 데이터 전처리처럼 라이브러리 함수가 내부 동작을 숨길 수 있는 부분은 한 번 명시적 tensor/NumPy 연산으로 확인한 뒤, 동일 동작의 라이브러리 방식과 대응시킨다.
 
 ## 현재 practice 구조
 ```text
@@ -69,18 +69,18 @@ practice/
 - dataset helper: `scripts/download_isbi2012.sh`
 - local data 위치: `data/02_unet/isbi2012/` (`data/`는 gitignore)
 - training: 30장의 512x512 EM image + fully annotated segmentation map
-- dataset을 받은 뒤 실제 archive 파일명을 먼저 `find`로 확인하고 코드 경로를 정한다. 파일명을 미리 가정하지 않는다.
 - 현재 확인된 파일: `train-volume.tif`, `train-labels.tif`, `test-volume.tif`, `test-labels.tif`, `challenge-error-metrics.bsh`
 - TIFF는 PNG로 변환하지 않고 multi-page stack 그대로 먼저 읽는다.
-- `01_data.py` 첫 단계에서는 train image/label stack의 shape, dtype, min/max, label unique value를 확인하고, 같은 index의 image/GT를 `matplotlib`로 나란히 시각화한다.
-- label 값이 `[0, 255]`처럼 binary로 보이더라도 어느 값이 membrane/cell interior인지 미리 단정하지 않고 image와 GT를 확대/overlay하여 시각적으로 먼저 검증한다.
-- 현재 관찰상 `0`은 membrane/boundary, `255`는 cell interior로 해석한다.
-- raw `uint8` image/label을 PyTorch 학습 입력으로 바꾸는 과정을 직접 확인한다: image는 `float32` 및 0~1 스케일로 변환하고 channel 축을 추가하며, GT는 논문 class 의미를 유지하면서 학습용 class/tensor 형태로 변환한다.
-- 변환 전후에 반드시 shape, dtype, value range, unique value를 출력해 확인한다.
-- 실제 U-Net 구현에서는 contracting path / bottleneck / expanding path / crop+concat / final 1x1 conv를 전체 코드로 본 뒤, 각 단계의 tensor shape와 skip feature를 시각화/출력하며 분석한다.
-- Figure 1 input tile 572x572와 dataset image 512x512를 구분
-- 구조: valid conv / pool / up-conv / crop + concat / 1x1 conv
-- 이후 weighted loss, elastic deformation, overlap-tile을 논문 순서로 추가
+- 현재 관찰상 GT의 `0`은 membrane/boundary, `255`는 cell interior로 해석한다.
+- `unet.py`: original-style valid convolution / crop+concat / 1x1 classifier를 포함한 전체 U-Net model definition
+- `01_data.py`: TIFF stack, class 의미, tensor 변환, input/GT/overlay 시각화
+- `02_model.py`: Figure 1의 `572x572 → 388x388` shape trace와 crop+concat/feature 시각화
+- `03_train.py`: 실제 30-slice data를 이용한 baseline training, SGD momentum 0.99, CrossEntropyLoss, checkpoint/curve
+- `04_analyze.py`: probability / prediction / error / IoU / Dice / encoder-decoder feature 시각화
+- 현재 training baseline은 논문의 boundary-aware weight map과 elastic deformation을 아직 구현하지 않은 architecture/data-flow baseline이며 README에 차이를 명시한다.
+- Figure 1 input tile 572x572와 dataset image 512x512를 구분한다.
+- valid convolution 때문에 output이 input보다 작으므로 loss 계산 시 GT를 model output field-of-view에 맞게 center crop한다.
+- 이후 fidelity 단계: elastic deformation → boundary-aware weighted loss → overlap-tile/mirror padding → challenge metric 비교.
 
 ### 03_deeplabv3plus
 - 논문: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation
