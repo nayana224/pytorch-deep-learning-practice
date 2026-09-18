@@ -121,6 +121,10 @@ python practice/03_deeplabv3plus/05_analyze.py
 # evidence: same scaled backbone/ASPP without decoder
 python practice/03_deeplabv3plus/04_train.py --variant v3 --epochs 20
 python practice/03_deeplabv3plus/06_evidence.py --max-samples 100
+
+# prediction quality: public pretrained DeepLabv3+ ResNet101
+bash scripts/setup_deeplabv3plus_pretrained.sh
+python practice/03_deeplabv3plus/07_pretrained_analyze.py
 ```
 
 핵심 확인:
@@ -136,6 +140,7 @@ input / GT / prediction / probability / error map
 GT boundary error
 DeepLabv3-like baseline vs DeepLabv3+ decoder
 mIoU / boundary accuracy / interior accuracy
+scaled scratch model과 pretrained model의 prediction 품질 차이
 ```
 
 완료 기준:
