@@ -1,6 +1,8 @@
 import argparse
+import json
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -32,6 +34,12 @@ def mean_iou(histogram):
 parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", type=int, default=20)
 parser.add_argument("--batch-size", type=int, default=4)
+parser.add_argument(
+    "--variant",
+    choices=["v3plus", "v3"],
+    default="v3plus",
+    help="v3plus uses the low-level decoder; v3 is the no-decoder baseline.",
+)
 args = parser.parse_args()
 
 
@@ -61,9 +69,12 @@ validation_loader = DataLoader(
     num_workers=4,
 )
 
+use_decoder = args.variant == "v3plus"
+
 model = DeepLabV3Plus(
     num_classes=21,
     output_stride=16,
+    use_decoder=use_decoder,
 ).to(device)
 
 criterion = nn.CrossEntropyLoss(ignore_index=255)
@@ -73,6 +84,12 @@ optimizer = torch.optim.SGD(
     momentum=0.9,
     weight_decay=4e-5,
 )
+
+history = {
+    "variant": args.variant,
+    "train_loss": [],
+    "validation_miou": [],
+}
 
 for epoch in range(args.epochs):
     model.train()
@@ -91,6 +108,8 @@ for epoch in range(args.epochs):
 
         train_loss += loss.item()
 
+    average_loss = train_loss / len(train_loader)
+
     model.eval()
     histogram = torch.zeros(21, 21, device=device)
 
@@ -107,12 +126,52 @@ for epoch in range(args.epochs):
                 targets,
             )
 
+    validation_miou = mean_iou(histogram)
+
+    history["train_loss"].append(average_loss)
+    history["validation_miou"].append(validation_miou)
+
     print(
+        f"variant={args.variant} "
         f"epoch={epoch + 1} "
-        f"loss={train_loss / len(train_loader):.4f} "
-        f"mIoU={mean_iou(histogram):.4f}"
+        f"loss={average_loss:.4f} "
+        f"mIoU={validation_miou:.4f}"
     )
 
 output_dir = Path("outputs/03_deeplabv3plus")
 output_dir.mkdir(parents=True, exist_ok=True)
-torch.save(model.state_dict(), output_dir / "model.pt")
+
+checkpoint = {
+    "model_state_dict": model.state_dict(),
+    "variant": args.variant,
+    "output_stride": 16,
+    "history": history,
+}
+torch.save(checkpoint, output_dir / f"{args.variant}.pt")
+
+with open(
+    output_dir / f"04_history_{args.variant}.json",
+    "w",
+    encoding="utf-8",
+) as file:
+    json.dump(history, file, indent=2)
+
+epochs = range(1, args.epochs + 1)
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+axes[0].plot(epochs, history["train_loss"])
+axes[0].set_title(f"{args.variant}: train loss")
+axes[0].set_xlabel("epoch")
+axes[0].set_ylabel("cross entropy")
+
+axes[1].plot(epochs, history["validation_miou"])
+axes[1].set_title(f"{args.variant}: validation mIoU")
+axes[1].set_xlabel("epoch")
+axes[1].set_ylabel("mIoU")
+
+fig.tight_layout()
+fig.savefig(
+    output_dir / f"04_training_curves_{args.variant}.png",
+    dpi=160,
+)
+plt.close(fig)
