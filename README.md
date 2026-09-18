@@ -58,6 +58,25 @@ external/   official 외부 repository
 **중요:** 생성된 그림은 `data/`에 넣지 않는다.  
 `data/`는 입력 데이터 전용이고, 실습 결과는 모두 `outputs/<paper>/`에 저장한다.
 
+## 환경 점검
+
+공통 환경을 만든 뒤 한 번 점검한다.
+
+```bash
+bash scripts/setup_env.sh
+python scripts/00_check_environment.py
+```
+
+`00_check_environment.py`는 공통 PyTorch/CUDA 상태와 SAM, DINOv2, Diffusion Policy의 optional setup 여부를 함께 보여준다.
+
+논문별 외부 모델은 practice 실행 중 자동 다운로드하지 않는다.
+
+```bash
+bash scripts/setup_sam.sh
+bash scripts/setup_dinov2.sh
+bash scripts/setup_diffusion_policy.sh
+```
+
 ## 기본 진행 순서
 
 ```text
@@ -71,7 +90,7 @@ external/   official 외부 repository
 
 ## 빠른 핵심 실습
 
-모든 논문 폴더에서 동일한 명령 형태를 사용한다.
+모든 논문 폴더에서 동일한 명령 형태를 사용한다. core runner는 GUI 창을 띄우지 않고 `outputs/<paper>/`에 그림을 저장하므로 여러 시각화를 연속 실행해도 중간에 창을 닫을 필요가 없다.
 
 ```bash
 python practice/<paper>/00_run_core.py
