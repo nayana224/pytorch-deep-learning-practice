@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 
 class OptionAShortcut(nn.Module):
-    """Paper option A: spatial subsampling + zero padding, no learned weights."""
+    """논문 Option A: 학습 파라미터 없이 spatial downsampling과 zero padding을 사용한다."""
 
     def __init__(self, in_channels, out_channels, stride):
         super().__init__()
@@ -78,7 +78,7 @@ class ResidualBlock(nn.Module):
 
 
 class ResNet20(nn.Module):
-    """CIFAR ResNet-20: 6n+2 with n=3, channels 16/32/64."""
+    """CIFAR ResNet-20: 6n+2, n=3, channel은 16/32/64를 사용한다."""
 
     def __init__(self, residual=True):
         super().__init__()
