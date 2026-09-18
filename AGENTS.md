@@ -33,6 +33,8 @@
 - 공식 pretrained 모델을 쓰는 DINOv2/SAM 계열은 내부를 억지로 재구현하지 않고, `input → official model → feature/mask → analysis` 흐름을 명확히 보여준다.
 
 ## 시각화 우선 원칙
+각 논문 실습의 목적은 단순히 학습 코드를 실행하는 것이 아니라 **논문의 핵심 주장이 실제로 관찰되는지 확인하는 것**이다.
+
 각 논문에서 다음을 가능한 한 직접 본다.
 - input / GT
 - tensor shape 흐름
@@ -42,14 +44,32 @@
 - metric curve
 - error map / failure case
 
-## 현재 practice
+각 `practice/<paper>/`는 가능하면 마지막에 `analyze.py` 계열 스크립트를 두고, 최소한 아래 세 종류를 남긴다.
+1. **Mechanism visualization** — 논문의 핵심 연산/feature/attention/noising/denoising 등이 실제로 어떻게 작동하는지
+2. **Prediction visualization** — input / GT / prediction / probability 또는 trajectory
+3. **Evidence visualization** — 논문의 핵심 주장과 직접 연결되는 비교, metric curve, ablation-like comparison, failure case
+
+숫자 하나만 출력하고 끝내지 않는다. 결과 이미지는 `outputs/<paper>/`에 저장하여 나중에 논문 노트의 My observation 근거로 다시 볼 수 있게 한다.
+
+## 모델 선택 원칙
+- "논문에서 가장 좋은 모델"을 무조건 그대로 재학습하지 않는다.
+- 먼저 논문 표에서 **핵심 주장을 가장 잘 대표하는 canonical/best reported configuration**을 식별한다.
+- 공개 checkpoint와 현재 하드웨어로 현실적으로 실행 가능한 경우 그 모델을 우선 사용한다.
+- 대규모 pretraining이 필요한 경우에는 공식 pretrained checkpoint로 분석한다.
+- 절대 최고 성능이 multi-scale, ensemble, extra data, 비공개 데이터에 의존하면 그 조건을 README에 명확히 기록하고, 단일 모델 기준의 가장 강한 재현 가능한 설정을 실습 기준으로 삼는다.
+- 모델 선택 이유를 각 README의 `Target configuration`에 한 줄로 명시한다.
+
+## 현재/목표 practice 순서
 - `01_resnet`: CIFAR-10, plain vs residual, degradation/optimization
 - `02_unet`: ISBI 2012 EM, valid conv, crop+concat
 - `03_deeplabv3plus`: PASCAL VOC 2012, atrous conv, ASPP, decoder
-- `04_vit`: 논문 downstream CIFAR-100, patch/token/attention
-- `05_dinov2`: official DINOv2 + Oxford-IIIT Pets, frozen feature/PCA/probe
-- `06_sam`: official SAM + SA-1B subset, point/box/multimask
-- `07_diffusion_policy`: official Push-T demonstrations, action diffusion/receding horizon
+- `04_attention_is_all_you_need`: Transformer, Q/K/V, self/cross-attention, positional encoding
+- `05_vit`: Vision Transformer, patch/token/attention
+- `06_sam`: official SAM, point/box/multimask, promptable segmentation
+- `07_dinov2`: official DINOv2, frozen feature/PCA/probe
+- `08_act`: ACT, CVAE + Transformer, action chunking/temporal aggregation
+- `09_ddpm`: DDPM, forward noising/reverse denoising/noise prediction
+- `10_diffusion_policy`: official Push-T demonstrations, action diffusion/receding horizon
 
 ## 논문 실습 완료 기준
 1. Problem
