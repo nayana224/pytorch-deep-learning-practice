@@ -1,10 +1,10 @@
 # 02. U-Net — Convolutional Networks for Biomedical Image Segmentation
 
-이 폴더는 U-Net 논문의 핵심 구조와 ISBI 2012 EM 데이터 흐름을 PyTorch로 한 번에 실행하고 분석하기 위한 실습이다.
+실습 깊이: **Level 2~3**\n\n이 폴더는 U-Net 논문의 핵심 구조와 ISBI 2012 EM 데이터 흐름을 확인하기 위한 실습이다.
 
 ## 현재 실습 전략
 
-이번 단계부터는 코드를 작은 조각으로 이어 붙이기보다 **실행 가능한 전체 파이프라인을 먼저 제공하고, 사용자가 코드를 읽고 시각화/shape/output을 분석한 뒤 핵심 부분을 다시 타이핑하는 방식**으로 진행한다.
+첫 바퀴에서는 전체 학습보다 **Figure 1의 shape 흐름과 crop+concat skip connection**을 먼저 확인한다. 실제 training/prediction은 두 번째 단계에서 진행한다.
 
 논문에서 직접 확인할 핵심은 다음과 같다.
 
