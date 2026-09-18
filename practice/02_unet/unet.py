@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 class DoubleConv(nn.Module):
-    """3x3 valid convolution + ReLU, twice."""
+    """3x3 valid convolution과 ReLU를 두 번 반복한다."""
 
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -57,17 +57,17 @@ class UNet(nn.Module):
     def __init__(self, in_channels=1, num_classes=2):
         super().__init__()
 
-        # Contracting path
+        # Contracting path: 해상도를 줄이며 context를 압축한다.
         self.enc1 = DoubleConv(in_channels, 64)
         self.enc2 = DoubleConv(64, 128)
         self.enc3 = DoubleConv(128, 256)
         self.enc4 = DoubleConv(256, 512)
         self.pool = nn.MaxPool2d(2, 2)
 
-        # Bottom
+        # Bottleneck: encoder와 decoder 사이의 가장 깊은 표현이다.
         self.bottom = DoubleConv(512, 1024)
 
-        # Expanding path
+        # Expanding path: up-convolution과 skip feature로 해상도를 복원한다.
         self.up4 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
         self.dec4 = DoubleConv(1024, 512)
 
@@ -83,7 +83,7 @@ class UNet(nn.Module):
         self.final = nn.Conv2d(64, num_classes, 1)
 
     def forward(self, x, return_features=False):
-        # Encoder
+        # Encoder: contracting path 순서대로 feature를 만든다.
         e1 = self.enc1(x)
         e2 = self.enc2(self.pool(e1))
         e3 = self.enc3(self.pool(e2))
@@ -92,7 +92,7 @@ class UNet(nn.Module):
         # Bottom
         bottom = self.bottom(self.pool(e4))
 
-        # Decoder stage 4
+        # Decoder stage 4: upsample 후 encoder feature를 crop해서 concat한다.
         up4 = self.up4(bottom)
         crop4 = center_crop(e4, up4)
         concat4 = torch.cat([crop4, up4], dim=1)
