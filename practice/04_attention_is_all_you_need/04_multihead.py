@@ -52,7 +52,7 @@ for head, (ax, attention) in enumerate(zip(axes, attention_maps)):
     ax.set_ylabel("Query")
     fig.colorbar(image, ax=ax, fraction=0.046)
 
-fig.suptitle("서로 다른 head는 동일한 입력에서도 다른 attention pattern을 만든다")
+fig.suptitle("Different heads can learn different attention patterns")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "04_multihead_attention.png", dpi=160)
 plt.show()
