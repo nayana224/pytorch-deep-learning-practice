@@ -63,7 +63,7 @@ for ax, (feature, title) in zip(axes, items):
     ax.set_title(title)
     ax.axis("off")
 
-fig.suptitle("ResNet residual block 내부: F(x)와 shortcut이 실제로 더해진다")
+fig.suptitle("ResNet residual block: F(x) is added to the shortcut x")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "05_residual_mechanism.png", dpi=160)
 plt.show()
