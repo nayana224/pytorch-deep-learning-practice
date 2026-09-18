@@ -1,6 +1,6 @@
-# 07. Diffusion Policy — Visuomotor Policy Learning via Action Diffusion
+# 10. Diffusion Policy — Visuomotor Policy Learning via Action Diffusion
 
-재현 수준: **Official-code Push-T pipeline + scaled local training**.
+실습 깊이: **Level 3**\n\n재현 수준: **Official-code Push-T pipeline + scaled local training**.
 
 논문은 4 benchmarks / 15 tasks에서 평가하며, 공개 코드의 대표 visual task인 **Push-T**를 실제 demonstration dataset으로 사용한다. 이 폴더는 다른 toy trajectory를 만들지 않고 공식 `pusht.zip`의 `pusht_cchi_v7_replay.zarr`를 사용한다.
 
