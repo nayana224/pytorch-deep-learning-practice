@@ -1,330 +1,216 @@
 # 02. 논문 실습 순서
 
-이 문서는 `practice/`를 어떤 순서로 읽고 실행할지 정리한다.
+첫 바퀴에서는 **논문 전체 구현보다 핵심 메커니즘 확인**을 우선한다.
 
-## 공통 순서
-
-각 논문은 아래 순서로 본다.
-
-```text
-1. README
-2. raw data
-3. model definition
-4. shape / feature 확인
-5. training 또는 inference
-6. visualization / prediction
-7. failure case
-8. 논문 주장과 실습 관찰 비교
-```
-
----
-
-## 01. ResNet
-
-논문: Deep Residual Learning for Image Recognition
-
-데이터: CIFAR-10
-
-먼저 읽을 파일:
-
-```text
-practice/01_resnet/README.md
-practice/01_resnet/resnet.py
-```
-
-실행 순서:
+## 01. ResNet — Level 2
 
 ```bash
 python scripts/download_torchvision_data.py cifar10
-python practice/01_resnet/01_data.py
 python practice/01_resnet/02_model.py
-python practice/01_resnet/03_train.py
 python practice/01_resnet/04_analyze.py
 ```
 
-핵심 확인:
+핵심 질문:
 
 ```text
-plain block vs residual block
-F(x)
-shortcut x
-F(x) + x
-16 → 32 → 64 channels
-degradation problem
+x, F(x), F(x)+x는 실제 tensor에서 어떻게 연결되는가?
+plain network와 residual network는 무엇이 다른가?
 ```
 
----
-
-## 02. U-Net
-
-논문: Convolutional Networks for Biomedical Image Segmentation
-
-데이터: ISBI 2012 EM
-
-먼저 읽을 파일:
-
-```text
-practice/02_unet/README.md
-practice/02_unet/unet.py
-```
-
-실행 순서:
+## 02. U-Net — Level 2~3
 
 ```bash
 bash scripts/download_isbi2012.sh
-python practice/02_unet/01_data.py
 python practice/02_unet/02_model.py
-python practice/02_unet/03_train.py --epochs 10
 python practice/02_unet/04_analyze.py
 ```
 
-핵심 확인:
+핵심 질문:
 
 ```text
-valid convolution
-contracting path
-up-convolution
-center crop
-copy + crop
-channel concat
-572 → 388
-input / GT / logits / loss
+encoder feature가 crop/copy되어 decoder feature와 어디에서 concat되는가?
 ```
 
----
+## 03. DeepLabv3+ — Level 2~3
 
-## 03. DeepLabv3+
-
-논문: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation
-
-데이터: PASCAL VOC 2012
-
-먼저 읽을 파일:
-
-```text
-practice/03_deeplabv3plus/README.md
-practice/03_deeplabv3plus/deeplabv3plus.py
-```
-
-실행 순서:
+메커니즘:
 
 ```bash
 bash scripts/download_voc2012.sh
-python practice/03_deeplabv3plus/01_data.py
 python practice/03_deeplabv3plus/02_atrous.py
 python practice/03_deeplabv3plus/03_model.py
+```
 
-# main target: DeepLabv3+
+scaled model 분석:
+
+```bash
 python practice/03_deeplabv3plus/04_train.py --variant v3plus --epochs 20
 python practice/03_deeplabv3plus/05_analyze.py
+```
 
-# evidence: same scaled backbone/ASPP without decoder
-python practice/03_deeplabv3plus/04_train.py --variant v3 --epochs 20
-python practice/03_deeplabv3plus/06_evidence.py --max-samples 100
+실제로 잘 학습된 prediction 확인:
 
-# prediction quality: public pretrained DeepLabv3+ ResNet101
+```bash
 bash scripts/setup_deeplabv3plus_pretrained.sh
 python practice/03_deeplabv3plus/07_pretrained_analyze.py
 ```
 
-핵심 확인:
+핵심 질문:
 
 ```text
-atrous convolution sampling
-output stride
-ASPP branch별 multi-scale feature
-low-level feature → 48 channels
-high-level + low-level concat
-decoder refinement
-input / GT / prediction / probability / error map
-GT boundary error
-DeepLabv3-like baseline vs DeepLabv3+ decoder
-mIoU / boundary accuracy / interior accuracy
-scaled scratch model과 pretrained model의 prediction 품질 차이
+dilation rate는 sampling 범위를 어떻게 바꾸는가?
+ASPP branch는 왜 여러 개 필요한가?
+low-level feature가 decoder boundary refinement에 왜 필요한가?
 ```
 
-완료 기준:
+## 04. Attention Is All You Need — Level 2
+
+```bash
+python practice/04_attention_is_all_you_need/05_run_all.py
+```
+
+핵심 질문:
 
 ```text
-ASPP branch들이 서로 다른 spatial context를 본다는 것을 그림으로 설명할 수 있다.
-low-level feature가 decoder에 왜 필요한지 feature flow로 설명할 수 있다.
-decoder 유무 비교 결과가 boundary refinement 주장과 어떻게 연결되는지 설명할 수 있다.
+Q/K/V는 무엇인가?
+QK^T -> scaling -> softmax -> V가 어떤 의미인가?
+mask는 왜 미래 token을 막는가?
+여러 head는 왜 다른 attention pattern을 만들 수 있는가?
 ```
 
----
+## 05. ViT — Level 3
 
-## 04. Vision Transformer
-
-논문: An Image Is Worth 16x16 Words
-
-데이터: CIFAR-100 (논문 downstream benchmark)
-
-먼저 읽을 파일:
-
-```text
-practice/04_vit/README.md
-practice/04_vit/vit.py
-```
-
-실행 순서:
+첫 바퀴:
 
 ```bash
 python scripts/download_torchvision_data.py cifar100
-python practice/04_vit/01_data.py
-python practice/04_vit/02_patches.py
-python practice/04_vit/03_model.py
-python practice/04_vit/04_train.py --model tiny
-python practice/04_vit/05_analyze.py
+python practice/05_vit/01_data.py
+python practice/05_vit/02_patches.py
+python practice/05_vit/03_model.py
 ```
 
-핵심 확인:
-
-```text
-16x16 patch
-patch embedding
-CLS token
-position embedding
-Multi-Head Attention
-MLP
-residual connection
-attention visualization
-```
-
----
-
-## 05. DINOv2
-
-논문: Learning Robust Visual Features without Supervision
-
-데이터: Oxford-IIIT Pets (논문 evaluation benchmark)
-
-방식: official pretrained feature analysis
-
-먼저 읽을 파일:
-
-```text
-practice/05_dinov2/README.md
-practice/05_dinov2/common.py
-```
-
-실행 순서:
+두 번째 단계:
 
 ```bash
-python scripts/download_torchvision_data.py pets
-python practice/05_dinov2/01_data.py
-python practice/05_dinov2/02_features.py
-python practice/05_dinov2/03_pca.py
-python practice/05_dinov2/04_probe.py
-python practice/05_dinov2/05_analyze.py
+python practice/05_vit/04_train.py --model tiny
+python practice/05_vit/05_analyze.py
 ```
 
-핵심 확인:
+핵심 질문:
 
 ```text
-CLS feature
-patch feature
-frozen representation
-PCA visualization
-linear probe
-nearest-neighbor retrieval
+이미지가 어떻게 patch token sequence가 되는가?
+CLS token / position embedding / attention은 어디에 들어가는가?
 ```
 
----
-
-## 06. Segment Anything (SAM)
-
-논문: Segment Anything
-
-데이터: official SA-1B subset
-
-방식: official pretrained SAM analysis
-
-먼저 읽을 파일:
-
-```text
-practice/06_sam/README.md
-practice/06_sam/sam_utils.py
-```
-
-실행 순서:
+## 06. SAM — Level 3
 
 ```bash
+bash scripts/setup_sam.sh
 bash scripts/download_sam_vit_b.sh
-python practice/06_sam/01_image.py
+
 python practice/06_sam/02_point_prompt.py
 python practice/06_sam/03_box_prompt.py
 python practice/06_sam/04_ambiguity.py
-python practice/06_sam/05_analyze.py
 ```
 
-핵심 확인:
+핵심 질문:
 
 ```text
-image encoder
-prompt encoder
-mask decoder
-point prompt
-box prompt
-multimask ambiguity
-predicted IoU
+같은 image embedding에 prompt가 달라지면 mask가 어떻게 달라지는가?
+single point가 ambiguous할 때 multimask output이 왜 필요한가?
 ```
 
----
+## 07. DINOv2 — Level 3
 
-## 07. Diffusion Policy
+```bash
+python scripts/download_torchvision_data.py pets
+python practice/07_dinov2/02_features.py
+python practice/07_dinov2/03_pca.py
+python practice/07_dinov2/05_analyze.py
+```
 
-논문: Diffusion Policy
-
-데이터: official Push-T demonstrations
-
-방식: official code 기반 scaled analysis/training
-
-먼저 읽을 파일:
+핵심 질문:
 
 ```text
-practice/07_diffusion_policy/README.md
-practice/07_diffusion_policy/common.py
+label 없이 학습한 patch feature가 semantic structure를 실제로 갖는가?
+비슷한 이미지가 frozen representation에서 가까워지는가?
 ```
 
-실행 순서:
+## 08. ACT — Level 3
+
+첫 바퀴 mechanism check:
+
+```bash
+python practice/08_act/01_action_chunking.py
+python practice/08_act/02_temporal_ensemble.py
+python practice/08_act/03_cvae_latent.py
+```
+
+핵심 질문:
+
+```text
+왜 single action 대신 action chunk를 예측하는가?
+겹치는 chunk prediction을 temporal ensemble하는 이유는 무엇인가?
+CVAE latent z는 어떤 역할을 하는가?
+```
+
+현재 코드는 toy mechanism visualization이다. 실제 ALOHA model/dataset analysis는 2차 Level 3 실습에서 추가한다.
+
+## 09. DDPM — Level 2
+
+```bash
+python scripts/download_torchvision_data.py ddpm
+python practice/09_ddpm/01_forward_noising.py
+python practice/09_ddpm/02_noise_target.py
+python practice/09_ddpm/03_reconstruct_x0.py
+```
+
+핵심 질문:
+
+```text
+x0는 timestep이 증가하면서 어떻게 noise가 되는가?
+왜 model target이 x0가 아니라 epsilon인가?
+epsilon을 알면 왜 clean signal을 다시 추정할 수 있는가?
+```
+
+## 10. Diffusion Policy — Level 3
 
 ```bash
 bash scripts/setup_diffusion_policy.sh
 bash scripts/download_pusht.sh
-python practice/07_diffusion_policy/01_data.py
-python practice/07_diffusion_policy/02_diffusion.py
-python practice/07_diffusion_policy/03_policy.py
-python practice/07_diffusion_policy/04_train.py
-python practice/07_diffusion_policy/05_rollout.py
-python practice/07_diffusion_policy/06_analyze.py
+
+python practice/10_diffusion_policy/01_data.py
+python practice/10_diffusion_policy/02_diffusion.py
+python practice/10_diffusion_policy/03_policy.py
+python practice/10_diffusion_policy/05_rollout.py
+python practice/10_diffusion_policy/06_analyze.py
 ```
 
-핵심 확인:
+필요할 때만 scaled training:
 
-```text
-observation horizon
-action horizon
-prediction horizon
-noise addition
-noise prediction
-conditional denoising
-receding-horizon execution
-multimodal action samples
+```bash
+python practice/10_diffusion_policy/04_train.py --epochs 10
 ```
 
----
-
-## 권장 진행 방식
-
-한 논문의 모든 파일을 빠르게 실행하고 넘어가는 것이 목적이 아니다.
-
-각 논문에서 최소한 다음을 설명할 수 있을 때 다음 논문으로 넘어간다.
+핵심 질문:
 
 ```text
-왜 이 모델이 필요한가?
-모델 핵심 아이디어는 무엇인가?
-input / GT / output / loss는 무엇인가?
-논문 구조가 코드 어디에 구현되어 있는가?
-실험 결과는 논문 주장을 어떻게 뒷받침하는가?
-내가 직접 본 feature / prediction / failure case는 무엇인가?
+DDPM의 x가 robot action sequence로 바뀌면 무엇이 달라지는가?
+observation conditioning은 어디에 들어가는가?
+prediction/action/observation horizon은 어떻게 다른가?
+receding horizon으로 어떤 action만 실제 실행하는가?
+```
+
+## 첫 바퀴 종료 기준
+
+각 논문마다 다음을 모두 구현할 필요는 없다.
+
+```text
+[ ] Problem을 설명할 수 있다.
+[ ] Core idea를 설명할 수 있다.
+[ ] Method의 큰 data flow를 설명할 수 있다.
+[ ] Input / GT / Output / Loss를 설명할 수 있다.
+[ ] 핵심 experiment 하나가 무엇을 검증하는지 설명할 수 있다.
+[ ] outputs/<paper>/의 핵심 그림 하나를 보고 내가 관찰한 것을 말할 수 있다.
 ```
