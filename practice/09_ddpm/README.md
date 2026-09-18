@@ -32,7 +32,7 @@ python scripts/download_torchvision_data.py ddpm
 ## 실행
 
 ```bash
-python practice/09_ddpm/04_run_all.py
+python practice/09_ddpm/00_run_core.py
 ```
 
 ## 결과
