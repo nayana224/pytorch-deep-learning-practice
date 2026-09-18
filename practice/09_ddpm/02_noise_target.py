@@ -72,7 +72,7 @@ axes[2].set_title("training target epsilon")
 for ax in axes:
     ax.axis("off")
 
-fig.suptitle("DDPM training target: 모델은 추가된 noise epsilon을 예측한다")
+fig.suptitle("DDPM training target: predict the added noise epsilon")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "02_noise_prediction_target.png", dpi=160)
 plt.show()
