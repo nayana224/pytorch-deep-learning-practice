@@ -1,6 +1,6 @@
-# 05. DINOv2 — Learning Robust Visual Features without Supervision
+# 07. DINOv2 — Learning Robust Visual Features without Supervision
 
-재현 수준: **Official pretrained feature analysis**.
+실습 깊이: **Level 3**\n\n재현 수준: **Official pretrained feature analysis**.
 
 논문의 pretraining은 curated **LVD-142M**과 ViT-S/B/L/g, DINO+iBOT objectives, teacher EMA, KoLeo 등을 사용한다. 이를 개인 환경에서 재학습하는 것은 현실적이지 않으므로 **Meta 공식 DINOv2 checkpoint**를 사용한다.
 
