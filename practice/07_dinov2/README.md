@@ -20,17 +20,21 @@ python practice/07_dinov2/00_run_core.py
 전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
 생성된 그림은 `outputs/07_dinov2/`에서 확인한다.
 
-## 데이터 준비
+## 준비
+
+공식 DINOv2 repo와 pretrained ViT-S/14 weight를 먼저 준비한다.
 
 ```bash
+bash scripts/setup_dinov2.sh
 python scripts/download_torchvision_data.py pets
 ```
 
-이미 있으면 `[skip]`하고 다시 받지 않는다. 분석 코드는 데이터를 자동 다운로드하지 않는다.
+setup 이후 `practice/` 코드는 GitHub repo를 자동으로 다운로드하지 않는다.
+이미 준비된 `external/dinov2`와 torch hub cache를 사용한다.
 
 ## 파일
 
-- `common.py`: official torch.hub DINOv2 + preprocessing
+- `common.py`: local official DINOv2 checkout + cached pretrained weight + preprocessing
 - `01_data.py`: Oxford-IIIT Pets 실제 데이터
 - `02_features.py`: CLS / patch-token shape
 - `03_pca.py`: patch-feature PCA
