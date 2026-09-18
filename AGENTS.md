@@ -8,7 +8,9 @@
 - 논문에 없는 편의용 dataset을 기본 데이터로 대체하지 않는다.
 - 논문이 사용한 input / GT / architecture / loss / augmentation / metric을 가능한 한 기준으로 삼는다.
 - 전체 재현이 비현실적이면 `Faithful / Scaled / Pretrained analysis` 중 수준을 README에 명시한다.
-- synthetic data는 shape 확인용으로만 사용한다.
+- synthetic/toy data는 **Level 2의 메커니즘 확인용**으로만 사용할 수 있다.
+- toy example에서 나온 결과를 논문 성능 evidence로 해석하지 않는다.
+- Level 3의 성능/feature/failure 분석은 논문 dataset, official checkpoint, 또는 공개 재현 모델을 우선한다.
 
 ## 데이터 다운로드 원칙
 - `practice/`의 공부 코드는 데이터를 자동 다운로드하지 않는다. 공부 코드에서는 `download=False`를 기본으로 한다.
@@ -66,7 +68,11 @@
 - metric curve
 - error map / failure case
 
-각 `practice/<paper>/`는 가능하면 마지막에 `analyze.py` 계열 스크립트를 두고, 최소한 아래 세 종류를 남긴다.
+논문 깊이에 따라 필요한 시각화 수를 다르게 한다.
+- Level 2: 핵심 mechanism visualization 1~3개면 충분하다.
+- Level 3: mechanism + prediction/feature + failure/evidence를 본다.
+
+Level 3의 `practice/<paper>/`는 가능하면 아래 세 종류를 남긴다.
 1. **Mechanism visualization** — 논문의 핵심 연산/feature/attention/noising/denoising 등이 실제로 어떻게 작동하는지
 2. **Prediction visualization** — input / GT / prediction / probability 또는 trajectory
 3. **Evidence visualization** — 논문의 핵심 주장과 직접 연결되는 비교, metric curve, ablation-like comparison, failure case
@@ -97,7 +103,7 @@
 
 ## 현재 표준 practice
 
-`03_deeplabv3plus`를 claim-verification형 practice의 기준 예시로 사용한다.
+`03_deeplabv3plus`는 Level 2~3 혼합형 reference이고, `04_attention_is_all_you_need`와 `09_ddpm`은 Level 2 최소 실습 reference로 사용한다.
 
 이 폴더는 다음 세 층을 모두 포함해야 한다.
 - mechanism: atrous sampling / ASPP branch / feature flow
