@@ -1,6 +1,7 @@
-"""Vision Transformer 실습 파일.
+"""이미지가 ViT의 patch token sequence로 바뀌는 과정을 확인한다.
 
-논문 구조와 핵심 메커니즘을 읽기 쉽게 따라가기 위한 공부용 코드다.
+ViT의 첫 번째 핵심은 이미지를 CNN feature map으로 처리하는 대신,
+고정 크기 patch로 잘라 sequence처럼 Transformer에 넣는 것이다.
 """
 
 from pathlib import Path
@@ -10,8 +11,8 @@ from torchvision import transforms
 from torchvision.datasets import CIFAR100
 
 
-OUT = Path("outputs/05_vit")
-OUT.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR = Path("outputs/05_vit")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 try:
     image, _ = CIFAR100(
@@ -21,11 +22,18 @@ try:
     )[0]
 except RuntimeError as error:
     raise FileNotFoundError(
-        "CIFAR-100 is not prepared. Run: "
-        "python scripts/download_torchvision_data.py cifar100"
+        "CIFAR-100이 없습니다. 먼저 실행하세요:\n"
+        "  python scripts/download_torchvision_data.py cifar100"
     ) from error
 
-x = transforms.ToTensor()(transforms.Resize((384, 384))(image))
+# 원본 CIFAR-100은 32x32이므로 ViT-B/16 구조를 보기 위해
+# 384x384로 resize한다. 이 실습의 목적은 성능이 아니라 patch 흐름이다.
+x = transforms.ToTensor()(
+    transforms.Resize((384, 384))(image)
+)
+
+# [C,H,W] → 16x16 non-overlapping patch들의 sequence로 변환한다.
+# 384 / 16 = 24이므로 총 24x24 = 576개의 patch가 생긴다.
 patches = (
     x.unfold(1, 16, 16)
     .unfold(2, 16, 16)
@@ -33,15 +41,18 @@ patches = (
     .reshape(-1, 3, 16, 16)
 )
 
-print("image:", x.shape)
-print("patches:", patches.shape)
-print("sequence length:", patches.shape[0])
+print("image shape:", tuple(x.shape))
+print("patch tensor shape:", tuple(patches.shape))
+print("patch sequence length:", patches.shape[0])
 
+# 전체 576개를 다 그리기보다 앞의 32개만 확인한다.
 fig, axes = plt.subplots(4, 8, figsize=(10, 5))
 for index, ax in enumerate(axes.flat):
     ax.imshow(patches[index].permute(1, 2, 0))
+    ax.set_title(f"patch {index}", fontsize=7)
     ax.axis("off")
 
-plt.tight_layout()
-plt.savefig(OUT / "02_patches.png", dpi=150)
+fig.suptitle("ViT: image → 16x16 patch sequence")
+fig.tight_layout()
+fig.savefig(OUTPUT_DIR / "02_patches.png", dpi=150)
 plt.show()
