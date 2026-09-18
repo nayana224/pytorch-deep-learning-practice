@@ -1,5 +1,17 @@
 # 03. DeepLabv3+ — Encoder-Decoder with Atrous Separable Convolution
 
+
+## 공통 첫 바퀴 실행
+
+이 폴더의 핵심 실습만 연속 실행하려면:
+
+```bash
+python practice/03_deeplabv3plus/00_run_core.py
+```
+
+전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
+생성된 그림은 `outputs/03_deeplabv3plus/`에서 확인한다.
+
 ## Paper claim
 
 이 실습에서 확인할 논문 주장은 두 가지다.
