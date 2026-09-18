@@ -14,6 +14,14 @@
 - toy example 결과를 논문 성능 evidence로 해석하지 않는다.
 - Level 3 분석은 논문 dataset, official checkpoint, 또는 공개 재현 모델을 우선한다.
 
+## 저장소 정리 원칙
+
+- 빈 테스트 파일, 이전 학습 이력 보존용 중복 코드, 현재 프로젝트와 무관한 IDE 설정은 남기지 않는다.
+- notebook 전용 환경은 사용하지 않으며, 현재 프로젝트는 .py 기반 실습을 기준으로 한다.
+- 같은 목적의 runner가 여러 개 있으면 `00_run_core.py` 하나로 통일한다.
+- matplotlib figure의 title/tick/label은 폰트 의존성을 피하기 위해 기본적으로 영문을 사용한다.
+- 코드 주석과 README 설명은 한글을 사용해도 된다.
+
 ## 데이터 다운로드 원칙
 
 - `practice/` 코드는 데이터를 자동 다운로드하지 않는다. 공부 코드에서는 `download=False`를 기본으로 한다.
