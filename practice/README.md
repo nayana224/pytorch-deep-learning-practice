@@ -4,6 +4,18 @@
 
 MLP, CNN, Attention, Transformer 같은 기초 연산은 `lessons/`에서 다룬다. `practice/`는 논문 단위로 구성한다.
 
+## 논문별 실습 깊이
+
+모든 논문을 처음부터 끝까지 구현하지 않는다.
+
+- **Level 1**: 논문 이해
+- **Level 2**: 핵심 메커니즘 최소 실습
+- **Level 3**: 실제 모델 feature / prediction / failure 분석
+
+첫 바퀴의 목표는 각 논문의 핵심 주장과 알고리즘을 연결하는 것이다. Level 2에서는 전체 학습 파이프라인 대신 작은 tensor/example로 핵심 연산을 확인하고, Level 3에서만 pretrained 또는 논문에 가까운 모델을 실제 데이터에 적용한다.
+
+생성 결과는 `data/`가 아니라 `outputs/<paper>/`에 저장한다. `data/`는 dataset/input 전용으로 유지한다.
+
 ## 공통 학습 방식
 1. 논문에서 실제로 사용한 dataset / input / GT를 먼저 확인한다.
 2. raw data → transform → tensor → batch 흐름을 직접 본다.
