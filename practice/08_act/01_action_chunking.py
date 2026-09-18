@@ -41,7 +41,7 @@ for query_time in query_times:
         label=f"chunk from t={query_time}",
     )
 
-ax.set_title("ACT: 한 번의 query에서 action chunk를 예측")
+ax.set_title("ACT: predict an action chunk from one query")
 ax.set_xlabel("action dim 0")
 ax.set_ylabel("action dim 1")
 ax.legend()
