@@ -2,6 +2,18 @@
 
 실습 깊이: **Level 2~3**\n\n이 폴더는 U-Net 논문의 핵심 구조와 ISBI 2012 EM 데이터 흐름을 확인하기 위한 실습이다.
 
+
+## 공통 첫 바퀴 실행
+
+이 폴더의 핵심 실습만 연속 실행하려면:
+
+```bash
+python practice/02_unet/00_run_core.py
+```
+
+전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
+생성된 그림은 `outputs/02_unet/`에서 확인한다.
+
 ## 현재 실습 전략
 
 첫 바퀴에서는 전체 학습보다 **Figure 1의 shape 흐름과 crop+concat skip connection**을 먼저 확인한다. 실제 training/prediction은 두 번째 단계에서 진행한다.
