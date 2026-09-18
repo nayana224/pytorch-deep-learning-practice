@@ -8,6 +8,18 @@
 
 SA-1B는 research license 동의가 필요한 dataset이므로 자동 다운로드하지 않는다. Meta 공식 SA-1B 페이지에서 라이선스에 동의한 뒤 일부 shard를 `data/06_sam/sa1b/`에 둔다.
 
+
+## 공통 첫 바퀴 실행
+
+이 폴더의 핵심 실습만 연속 실행하려면:
+
+```bash
+python practice/06_sam/00_run_core.py
+```
+
+전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
+생성된 그림은 `outputs/06_sam/`에서 확인한다.
+
 ## 준비
 
 ```bash
