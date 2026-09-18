@@ -30,17 +30,27 @@ bash scripts/download_sam_vit_b.sh
 
 ## 분석
 
+첫 바퀴에서는 SAM을 **한 번만 load하고 image embedding도 한 번만 계산**한다.
+
 ```bash
-python practice/06_sam/01_image.py
-python practice/06_sam/02_point_prompt.py
-python practice/06_sam/03_box_prompt.py
-python practice/06_sam/04_ambiguity.py
+python practice/06_sam/00_run_core.py
+```
+
+`02_prompt_core.py` 한 파일에서 다음을 연속으로 확인한다.
+
+- positive point prompt → single mask
+- box prompt → single mask
+- ambiguous point prompt → 3 multimask outputs
+- predicted IoU와 실제 SA-1B GT IoU 비교
+
+추가로 automatic mask generation을 보고 싶을 때만:
+
+```bash
 python practice/06_sam/05_analyze.py
 ```
 
-- `02_point_prompt.py`: SA-1B GT 내부 foreground point → mask / predicted-IoU / actual IoU
-- `03_box_prompt.py`: SA-1B GT bbox → box-prompt segmentation
-- `04_ambiguity.py`: single-point **3 multimask outputs**와 IoU ranking
+- `01_image.py`: SA-1B image / released mask 확인
+- `02_prompt_core.py`: point / box / multimask를 한 번의 model load로 확인
 - `05_analyze.py`: automatic grid-prompt 계열 mask generation 관찰
 
 이 폴더는 training reproduction이 아니라 pretrained promptable-segmentation behavior 분석이다.
