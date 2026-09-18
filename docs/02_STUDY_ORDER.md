@@ -160,6 +160,8 @@ bash scripts/download_sam_vit_b.sh
 python practice/06_sam/00_run_core.py
 ```
 
+이 runner는 SAM을 한 번만 load하고 같은 image embedding에서 point / box / multimask를 연속 확인한다.
+
 핵심 질문:
 
 ```text
@@ -175,6 +177,7 @@ predicted IoU와 actual IoU는 어떻게 다른가?
 준비:
 
 ```bash
+bash scripts/setup_dinov2.sh
 python scripts/download_torchvision_data.py pets
 ```
 
