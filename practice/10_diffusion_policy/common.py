@@ -16,7 +16,7 @@ DATA_DIR = ROOT / "data" / "10_diffusion_policy"
 OUTPUT_DIR = ROOT / "outputs" / "10_diffusion_policy"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Official Push-T image-policy setting used in this practice.
+# 이 실습에서 사용하는 official Push-T image-policy의 핵심 horizon 설정이다.
 PREDICTION_HORIZON = 16
 OBSERVATION_HORIZON = 2
 ACTION_HORIZON = 8
@@ -37,7 +37,7 @@ SHAPE_META = {
     },
 }
 
-# Existing script compatibility
+# 기존 실습 스크립트와 변수명을 맞추기 위한 alias다.
 OUT = OUTPUT_DIR
 HORIZON = PREDICTION_HORIZON
 N_OBS_STEPS = OBSERVATION_HORIZON
