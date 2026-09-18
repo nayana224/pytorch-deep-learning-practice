@@ -1,7 +1,9 @@
-"""U-Net 논문 실습 코드.
+"""U-Net의 핵심 구조를 Figure 1 순서대로 확인한다.
 
-Contracting path, valid convolution, crop-and-copy skip connection,
-expanding path와 segmentation 결과를 확인하기 위한 공부용 코드다.
+첫 바퀴의 목적은 전체 학습이 아니라 다음 세 가지를 눈으로 확인하는 것이다.
+1. valid convolution 때문에 spatial size가 줄어든다.
+2. encoder의 고해상도 feature를 center crop한다.
+3. crop한 encoder feature와 upsample된 decoder feature를 channel 방향으로 concat한다.
 """
 
 from pathlib import Path
@@ -17,10 +19,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def normalize_map(x: torch.Tensor) -> torch.Tensor:
+    """feature map을 그림으로 보기 쉽도록 0~1 범위로 정규화한다."""
     x = x.detach().cpu()
     x = x - x.min()
-    denom = x.max().clamp_min(1e-8)
-    return x / denom
+    return x / x.max().clamp_min(1e-8)
 
 
 def main() -> None:
@@ -29,22 +31,33 @@ def main() -> None:
     model = UNet(in_channels=1, num_classes=2)
     model.eval()
 
-    # Figure 1 in the original paper uses a 572x572 input tile.
+    # 원 논문 Figure 1은 572x572 입력 tile을 사용한다.
+    # 실제 데이터가 아니라 구조와 shape 흐름만 확인하는 입력이다.
     x = torch.randn(1, 1, 572, 572)
 
     with torch.no_grad():
         logits, features = model(x, return_features=True)
 
-    print("=== Original U-Net Figure 1 shape trace ===")
+    print("=== U-Net Figure 1 shape 흐름 ===")
     print_feature_shapes(features)
     print()
-    print("final output shape:", logits.shape)
-    print("expected Figure 1 output spatial size: 388 x 388")
+    print("최종 output shape:", logits.shape)
+    print("논문 Figure 1의 기대 spatial size: 388 x 388")
 
     assert logits.shape == (1, 2, 388, 388)
 
-    # Visualize mean absolute activation at important points.
-    names = ["enc1", "enc4", "bottleneck", "crop4", "up4", "concat4", "dec1"]
+    # encoder → bottleneck → decoder의 대표 지점만 뽑아 본다.
+    # 모든 channel을 따로 그리기보다 채널별 절댓값 평균을 사용해
+    # 각 단계가 어떤 spatial pattern을 유지하는지 빠르게 확인한다.
+    names = [
+        "enc1",
+        "enc4",
+        "bottleneck",
+        "crop4",
+        "up4",
+        "concat4",
+        "dec1",
+    ]
 
     fig, axes = plt.subplots(2, 4, figsize=(16, 8))
     axes = axes.ravel()
@@ -56,11 +69,12 @@ def main() -> None:
         ax.axis("off")
 
     axes[-1].axis("off")
-    fig.suptitle("U-Net feature-map overview (random input; structure check)")
+    fig.suptitle("U-Net: encoder → bottleneck → crop/copy → decoder")
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "02_model_feature_overview.png", dpi=160)
 
-    # Crop+concat visualization: compare spatial alignment explicitly.
+    # U-Net에서 가장 중요한 skip connection을 따로 크게 본다.
+    # crop4와 up4는 spatial size가 같아야 concat할 수 있다.
     crop4 = features["crop4"][0].abs().mean(dim=0)
     up4 = features["up4"][0].abs().mean(dim=0)
     concat4 = features["concat4"][0].abs().mean(dim=0)
@@ -69,12 +83,17 @@ def main() -> None:
     for ax, feature, title in zip(
         axes2,
         [crop4, up4, concat4],
-        ["cropped encoder feature", "up-convolved decoder feature", "after channel concat"],
+        [
+            "crop한 encoder feature",
+            "up-convolution한 decoder feature",
+            "channel concat 결과",
+        ],
     ):
         ax.imshow(normalize_map(feature), cmap="magma")
         ax.set_title(title)
         ax.axis("off")
 
+    fig2.suptitle("U-Net 핵심: 고해상도 encoder feature를 decoder에 직접 전달")
     fig2.tight_layout()
     fig2.savefig(OUTPUT_DIR / "02_model_crop_concat.png", dpi=160)
 
