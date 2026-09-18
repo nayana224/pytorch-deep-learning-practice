@@ -16,7 +16,7 @@ OUTPUT_DIR = Path("outputs/04_attention_is_all_you_need")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 source_tokens = ["I", "study", "deep", "learning"]
-target_tokens = ["나는", "딥러닝을", "공부한다"]
+target_tokens = ["Je", "etudie", "IA"]
 
 # encoder가 source 문장을 처리한 결과라고 가정한다.
 encoder_output = torch.tensor(
@@ -72,7 +72,7 @@ ax.set_ylabel("Decoder Query token")
 ax.set_title("Encoder-Decoder Cross-Attention")
 
 fig.colorbar(image, ax=ax, fraction=0.046)
-fig.suptitle("Decoder token이 encoder의 어느 source token을 참고하는가")
+fig.suptitle("Which encoder source tokens each decoder query attends to")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "06_cross_attention.png", dpi=160)
 plt.show()
