@@ -79,7 +79,7 @@ for ax, matrix, title in zip(
     ax.set_xlabel("feature dimension")
     fig.colorbar(image, ax=ax, fraction=0.046)
 
-fig.suptitle("같은 token embedding이 서로 다른 Q / K / V로 projection되는 과정")
+fig.suptitle("The same token embeddings are projected into Q, K, and V")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "01_qkv_projection.png", dpi=160)
 plt.show()
