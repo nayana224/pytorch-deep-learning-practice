@@ -1,3 +1,9 @@
+"""ResNet 논문 실습 코드.
+
+Residual learning의 핵심인 F(x), shortcut x, F(x)+x와
+plain network 대비 optimization 차이를 확인하기 위한 공부용 코드다.
+"""
+
 from pathlib import Path
 
 import numpy as np
