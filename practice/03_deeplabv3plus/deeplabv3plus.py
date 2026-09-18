@@ -55,7 +55,15 @@ class SimpleXceptionBackbone(nn.Module):
             nn.Conv2d(256, 256, 3, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            nn.Conv2d(256, 728, 3, stride=stride, padding=dilation, dilation=dilation, bias=False),
+            nn.Conv2d(
+                256,
+                728,
+                3,
+                stride=stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False,
+            ),
             nn.BatchNorm2d(728),
             nn.ReLU(inplace=True),
             AtrousSeparableConv(728, 2048, dilation=dilation),
@@ -83,7 +91,7 @@ class ASPP(nn.Module):
         )
         self.project = nn.Conv2d(256 * 5, 256, 1)
 
-    def forward(self, x):
+    def forward(self, x, return_branches=False):
         size = x.shape[-2:]
 
         b1 = self.branch1(x)
@@ -92,16 +100,33 @@ class ASPP(nn.Module):
         b4 = self.branch4(x)
 
         pooled = self.image_pool(x)
-        pooled = F.interpolate(pooled, size=size, mode="bilinear", align_corners=False)
+        pooled = F.interpolate(
+            pooled,
+            size=size,
+            mode="bilinear",
+            align_corners=False,
+        )
 
-        x = torch.cat([b1, b2, b3, b4, pooled], dim=1)
-        return self.project(x)
+        concatenated = torch.cat([b1, b2, b3, b4, pooled], dim=1)
+        projected = self.project(concatenated)
+
+        if return_branches:
+            return projected, {
+                "1x1": b1,
+                "rate6": b2,
+                "rate12": b3,
+                "rate18": b4,
+                "image_pool": pooled,
+            }
+
+        return projected
 
 
 class DeepLabV3Plus(nn.Module):
-    def __init__(self, num_classes=21, output_stride=16):
+    def __init__(self, num_classes=21, output_stride=16, use_decoder=True):
         super().__init__()
 
+        self.use_decoder = use_decoder
         self.backbone = SimpleXceptionBackbone(output_stride)
         self.aspp = ASPP(output_stride)
 
@@ -117,22 +142,39 @@ class DeepLabV3Plus(nn.Module):
         input_size = x.shape[-2:]
 
         low, high = self.backbone(x)
-        context = self.aspp(high)
 
-        context = F.interpolate(
-            context,
-            size=low.shape[-2:],
-            mode="bilinear",
-            align_corners=False,
-        )
+        if return_features:
+            context, aspp_branches = self.aspp(
+                high,
+                return_branches=True,
+            )
+        else:
+            context = self.aspp(high)
+            aspp_branches = None
 
-        low48 = self.low_reduce(low)
-        merged = torch.cat([context, low48], dim=1)
+        if self.use_decoder:
+            context_up = F.interpolate(
+                context,
+                size=low.shape[-2:],
+                mode="bilinear",
+                align_corners=False,
+            )
 
-        decoded = self.decoder_conv1(merged)
-        decoded = self.decoder_conv2(decoded)
+            low48 = self.low_reduce(low)
+            merged = torch.cat([context_up, low48], dim=1)
 
-        logits = self.classifier(decoded)
+            decoded = self.decoder_conv1(merged)
+            decoded = self.decoder_conv2(decoded)
+            prediction_feature = decoded
+        else:
+            # DeepLabv3-like baseline for the decoder comparison.
+            context_up = context
+            low48 = None
+            merged = None
+            decoded = None
+            prediction_feature = context
+
+        logits = self.classifier(prediction_feature)
         logits = F.interpolate(
             logits,
             size=input_size,
@@ -141,13 +183,26 @@ class DeepLabV3Plus(nn.Module):
         )
 
         if return_features:
-            return logits, {
+            features = {
                 "low": low,
                 "high": high,
                 "aspp": context,
-                "low48": low48,
-                "concat": merged,
-                "decoded": decoded,
+                "prediction_feature": prediction_feature,
             }
+
+            for name, feature in aspp_branches.items():
+                features[f"aspp_{name}"] = feature
+
+            if self.use_decoder:
+                features.update(
+                    {
+                        "aspp_up": context_up,
+                        "low48": low48,
+                        "concat": merged,
+                        "decoded": decoded,
+                    }
+                )
+
+            return logits, features
 
         return logits
