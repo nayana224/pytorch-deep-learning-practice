@@ -113,20 +113,37 @@ bash scripts/download_voc2012.sh
 python practice/03_deeplabv3plus/01_data.py
 python practice/03_deeplabv3plus/02_atrous.py
 python practice/03_deeplabv3plus/03_model.py
-python practice/03_deeplabv3plus/04_train.py --epochs 20
+
+# main target: DeepLabv3+
+python practice/03_deeplabv3plus/04_train.py --variant v3plus --epochs 20
 python practice/03_deeplabv3plus/05_analyze.py
+
+# evidence: same scaled backbone/ASPP without decoder
+python practice/03_deeplabv3plus/04_train.py --variant v3 --epochs 20
+python practice/03_deeplabv3plus/06_evidence.py --max-samples 100
 ```
 
 핵심 확인:
 
 ```text
-atrous convolution
+atrous convolution sampling
 output stride
-ASPP
+ASPP branch별 multi-scale feature
 low-level feature → 48 channels
-concat
+high-level + low-level concat
 decoder refinement
-mIoU
+input / GT / prediction / probability / error map
+GT boundary error
+DeepLabv3-like baseline vs DeepLabv3+ decoder
+mIoU / boundary accuracy / interior accuracy
+```
+
+완료 기준:
+
+```text
+ASPP branch들이 서로 다른 spatial context를 본다는 것을 그림으로 설명할 수 있다.
+low-level feature가 decoder에 왜 필요한지 feature flow로 설명할 수 있다.
+decoder 유무 비교 결과가 boundary refinement 주장과 어떻게 연결되는지 설명할 수 있다.
 ```
 
 ---
