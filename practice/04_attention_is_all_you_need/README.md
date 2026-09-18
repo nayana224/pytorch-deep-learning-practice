@@ -41,12 +41,12 @@ Transformer는 recurrence와 convolution 없이도 attention만으로 sequence �
 - `04_multihead.py`: head별 attention map 비교
 - `05_positional_encoding.py`: sinusoidal positional encoding
 - `06_cross_attention.py`: encoder-decoder cross-attention
-- `07_run_all.py`: Level 2 실습 전체 실행
+- `00_run_core.py`: 첫 바퀴 핵심 실습 전체 실행
 
 ## 실행
 
 ```bash
-python practice/04_attention_is_all_you_need/07_run_all.py
+python practice/04_attention_is_all_you_need/00_run_core.py
 ```
 
 ## 생성 결과
