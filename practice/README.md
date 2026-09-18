@@ -35,15 +35,19 @@
 
 ## 첫 바퀴 실행 방식
 
-Level 2 논문은 가능하면 run-all 스크립트 하나로 핵심 그림을 연속 생성한다.
+모든 논문 폴더에 공통으로 `00_run_core.py`를 둔다.
 
 ```bash
-python practice/04_attention_is_all_you_need/07_run_all.py
-python practice/08_act/04_run_all.py
-python practice/09_ddpm/04_run_all.py
+python practice/01_resnet/00_run_core.py
+python practice/04_attention_is_all_you_need/00_run_core.py
+python practice/09_ddpm/00_run_core.py
 ```
 
-Level 3 논문은 dataset/checkpoint 준비가 필요하므로 README의 준비 단계와 분석 단계를 분리한다.
+이 runner는 전체 training을 자동으로 돌리는 도구가 아니다. 각 논문의 첫 바퀴에서 필요한 핵심 mechanism script만 순서대로 실행한다.
+
+Level 3 논문은 dataset/checkpoint 준비가 필요하므로, 준비가 안 된 경우 각 README에 적힌 setup 명령을 먼저 실행한다.
+
+전체 논문의 핵심 시각화 목록은 `docs/04_CORE_VISUALIZATION_MAP.md`에서 한 번에 확인한다.
 
 ## README 공통 구조
 
