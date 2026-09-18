@@ -35,7 +35,7 @@ practice/
 | 1 | ResNet | Level 2 | `x`, `F(x)`, `F(x)+x` |
 | 2 | U-Net | Level 2~3 | crop/copy + decoder concat |
 | 3 | DeepLabv3+ | Level 2~3 | atrous / ASPP / decoder boundary |
-| 4 | Attention Is All You Need | Level 2 | Q/K/V → attention → mask → multi-head |
+| 4 | Attention Is All You Need | Level 2 | Q/K/V → attention → mask → multi-head → positional/cross-attention |
 | 5 | ViT | Level 3 | image → patch token → attention |
 | 6 | SAM | Level 3 | prompt 변화에 따른 mask 변화 |
 | 7 | DINOv2 | Level 3 | patch feature PCA / semantic retrieval |
@@ -67,6 +67,22 @@ external/   official 외부 repository
 4. outputs/<paper>/ 그림 확인
 5. 그림을 보며 논문의 핵심 주장을 내 말로 설명
 6. 연구와 직접 연결되는 논문만 Level 3 진행
+```
+
+## 빠른 핵심 실습
+
+전체 모델을 학습하지 않고 핵심 메커니즘만 바로 보고 싶을 때:
+
+```bash
+# Transformer attention 핵심
+python practice/04_attention_is_all_you_need/07_run_all.py
+
+# ACT 첫 바퀴 핵심
+python practice/08_act/04_run_all.py
+
+# DDPM 핵심
+python scripts/download_torchvision_data.py ddpm
+python practice/09_ddpm/04_run_all.py
 ```
 
 상세 순서는 `docs/02_STUDY_ORDER.md`를 사용한다.

@@ -65,7 +65,7 @@ low-level feature가 decoder boundary refinement에 왜 필요한가?
 ## 04. Attention Is All You Need — Level 2
 
 ```bash
-python practice/04_attention_is_all_you_need/05_run_all.py
+python practice/04_attention_is_all_you_need/07_run_all.py
 ```
 
 핵심 질문:
@@ -75,6 +75,8 @@ Q/K/V는 무엇인가?
 QK^T -> scaling -> softmax -> V가 어떤 의미인가?
 mask는 왜 미래 token을 막는가?
 여러 head는 왜 다른 attention pattern을 만들 수 있는가?
+positional encoding은 왜 필요한가?
+cross-attention에서 Q와 K/V는 각각 어디에서 오는가?
 ```
 
 ## 05. ViT — Level 3
@@ -141,9 +143,7 @@ label 없이 학습한 patch feature가 semantic structure를 실제로 갖는�
 첫 바퀴 mechanism check:
 
 ```bash
-python practice/08_act/01_action_chunking.py
-python practice/08_act/02_temporal_ensemble.py
-python practice/08_act/03_cvae_latent.py
+python practice/08_act/04_run_all.py
 ```
 
 핵심 질문:
@@ -160,9 +160,7 @@ CVAE latent z는 어떤 역할을 하는가?
 
 ```bash
 python scripts/download_torchvision_data.py ddpm
-python practice/09_ddpm/01_forward_noising.py
-python practice/09_ddpm/02_noise_target.py
-python practice/09_ddpm/03_reconstruct_x0.py
+python practice/09_ddpm/04_run_all.py
 ```
 
 핵심 질문:

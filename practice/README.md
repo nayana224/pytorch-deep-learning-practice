@@ -12,10 +12,11 @@
 2. 모든 논문은 Level 1까지 읽는다.
 3. 중요한 논문은 Level 2에서 핵심 mechanism 하나를 직접 본다.
 4. 연구와 직접 연결되는 논문만 Level 3까지 간다.
-5. 시각화는 많이 만드는 것이 아니라 **결정적인 그림 1~3개**를 남긴다.
+5. 시각화는 많이 만드는 것이 아니라 **핵심 질문에 답하는 결정적인 그림만** 남긴다.
 6. 생성 결과는 `outputs/<paper>/`에 저장한다.
 7. toy example은 mechanism 이해용으로만 사용하고 evidence로 해석하지 않는다.
 8. 실제 성능을 볼 때는 논문 dataset / official checkpoint / 공개 재현 모델을 우선한다.
+9. 코드 주석은 핵심 연산의 **왜 필요한지 / 입력과 출력이 무엇인지 / 무엇을 확인해야 하는지**가 드러나도록 한글로 작성한다.
 
 ## 순서와 깊이
 
@@ -31,6 +32,18 @@
 | `08_act` | ACT | Level 3 |
 | `09_ddpm` | DDPM | Level 2 |
 | `10_diffusion_policy` | Diffusion Policy | Level 3 |
+
+## 첫 바퀴 실행 방식
+
+Level 2 논문은 가능하면 run-all 스크립트 하나로 핵심 그림을 연속 생성한다.
+
+```bash
+python practice/04_attention_is_all_you_need/07_run_all.py
+python practice/08_act/04_run_all.py
+python practice/09_ddpm/04_run_all.py
+```
+
+Level 3 논문은 dataset/checkpoint 준비가 필요하므로 README의 준비 단계와 분석 단계를 분리한다.
 
 ## README 공통 구조
 

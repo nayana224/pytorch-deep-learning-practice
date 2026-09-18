@@ -20,9 +20,7 @@ python scripts/download_torchvision_data.py ddpm
 ## 실행
 
 ```bash
-python practice/09_ddpm/01_forward_noising.py
-python practice/09_ddpm/02_noise_target.py
-python practice/09_ddpm/03_reconstruct_x0.py
+python practice/09_ddpm/04_run_all.py
 ```
 
 ## 결과
@@ -32,6 +30,18 @@ outputs/09_ddpm/
 ├── 01_forward_noising.png
 ├── 02_noise_prediction_target.png
 └── 03_reconstruct_x0.png
+```
+
+## 세 실습의 연결
+
+```text
+x0
+↓ forward noising
+x_t
+↓ 모델이 epsilon을 예측
+epsilon_theta(x_t, t)
+↓
+clean signal x0 추정
 ```
 
 ## 이 실습에서 하지 않는 것
