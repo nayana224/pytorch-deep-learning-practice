@@ -1,3 +1,9 @@
+"""DeepLabv3+ 논문 실습 코드.
+
+Atrous convolution, ASPP, low-level feature와 decoder가
+semantic segmentation에 어떻게 사용되는지 확인하기 위한 공부용 코드다.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
