@@ -1,6 +1,6 @@
-# 04. Vision Transformer — An Image Is Worth 16x16 Words
+# 05. Vision Transformer — An Image Is Worth 16x16 Words
 
-재현 수준: **Scaled downstream training / paper architecture analysis**.
+실습 깊이: **Level 3**\n\n재현 수준: **Scaled downstream training / paper architecture analysis**.
 
 논문은 ImageNet, ImageNet-21k, JFT-300M으로 pretrain하고 ImageNet, CIFAR-10/100, Oxford-IIIT Pets, Flowers-102, VTAB으로 transfer한다. 로컬 기본 dataset은 논문에 실제 등장하는 **CIFAR-100**이다. JFT-300M/ImageNet-21k pretraining 자체는 현실적으로 재현하지 않으며 결과를 논문과 동일 성능 재현으로 해석하지 않는다.
 
@@ -27,3 +27,22 @@ python practice/05_vit/03_model.py
 python practice/05_vit/04_train.py --model tiny
 python practice/05_vit/05_analyze.py
 ```
+
+
+## 첫 바퀴 권장
+
+처음 읽을 때는 전체 학습보다 아래 세 개를 우선 본다.
+
+```bash
+python practice/05_vit/01_data.py
+python practice/05_vit/02_patches.py
+python practice/05_vit/03_model.py
+```
+
+확인 질문:
+
+- 이미지가 실제로 16×16 patch token으로 바뀌는가?
+- CLS token과 positional embedding이 sequence에 어떻게 붙는가?
+- self-attention이 CNN의 local convolution과 다른 방식으로 token 관계를 만드는가?
+
+`04_train.py`와 `05_analyze.py`는 두 번째 단계다. scratch tiny model의 낮은 성능을 ViT 논문 성능으로 해석하지 않는다.
