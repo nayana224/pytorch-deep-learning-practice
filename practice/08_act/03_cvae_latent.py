@@ -57,7 +57,7 @@ for index in range(batch_size):
         linestyle="--",
     )
 
-ax.set_title("ACT CVAE: posterior에서 latent z를 sampling")
+ax.set_title("ACT CVAE: sample latent z from the posterior")
 ax.set_xlabel("z dim 0")
 ax.set_ylabel("z dim 1")
 ax.legend()
