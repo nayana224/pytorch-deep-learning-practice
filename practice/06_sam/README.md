@@ -1,6 +1,6 @@
 # 06. SAM — Segment Anything
 
-재현 수준: **Official pretrained SAM + SA-1B subset analysis**.
+실습 깊이: **Level 3**\n\n재현 수준: **Official pretrained SAM + SA-1B subset analysis**.
 
 논문은 promptable segmentation task, SAM(image encoder + prompt encoder + lightweight mask decoder), 그리고 **SA-1B: 11M images / 1.1B masks**를 함께 제안한다. 전체 SA-1B를 재학습하는 대신 official SAM checkpoint를 사용하되, 실습 image/GT도 논문 데이터인 **SA-1B의 실제 shard/subset**을 사용한다. 임의 COCO/인터넷 이미지를 기본 dataset으로 대체하지 않는다.
 
