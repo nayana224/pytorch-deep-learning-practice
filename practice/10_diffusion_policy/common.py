@@ -12,8 +12,8 @@ from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
 
 ROOT = Path(__file__).resolve().parents[2]
 OFFICIAL_REPO = ROOT / "external" / "diffusion_policy"
-DATA_DIR = ROOT / "data" / "07_diffusion_policy"
-OUTPUT_DIR = ROOT / "outputs" / "07_diffusion_policy"
+DATA_DIR = ROOT / "data" / "10_diffusion_policy"
+OUTPUT_DIR = ROOT / "outputs" / "10_diffusion_policy"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Official Push-T image-policy setting used in this practice.
