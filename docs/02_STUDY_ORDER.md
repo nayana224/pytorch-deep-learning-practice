@@ -22,7 +22,6 @@ plain network와 residual network는 무엇이 다른가?
 ```bash
 bash scripts/download_isbi2012.sh
 python practice/02_unet/02_model.py
-python practice/02_unet/02_model.py
 ```
 
 핵심 질문:
