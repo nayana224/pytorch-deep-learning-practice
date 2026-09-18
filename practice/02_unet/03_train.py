@@ -1,3 +1,9 @@
+"""U-Net 논문 실습 코드.
+
+Contracting path, valid convolution, crop-and-copy skip connection,
+expanding path와 segmentation 결과를 확인하기 위한 공부용 코드다.
+"""
+
 from __future__ import annotations
 
 import argparse
