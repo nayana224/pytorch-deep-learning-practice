@@ -5,6 +5,18 @@
 이 폴더의 목적은 Transformer 번역 모델 전체를 재현하는 것이 아니다.  
 논문의 핵심 메커니즘을 작은 tensor로 직접 계산하고, 결과를 그림으로 확인한다.
 
+
+## 공통 첫 바퀴 실행
+
+이 폴더의 핵심 실습만 연속 실행하려면:
+
+```bash
+python practice/04_attention_is_all_you_need/00_run_core.py
+```
+
+전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
+생성된 그림은 `outputs/04_attention_is_all_you_need/`에서 확인한다.
+
 ## Paper claim
 
 Transformer는 recurrence와 convolution 없이도 attention만으로 sequence 관계를 모델링할 수 있다.
