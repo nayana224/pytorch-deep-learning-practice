@@ -24,7 +24,7 @@ python practice/08_act/00_run_core.py
 ## 첫 바퀴 실행
 
 ```bash
-python practice/08_act/04_run_all.py
+python practice/08_act/00_run_core.py
 ```
 
 ## 결과
