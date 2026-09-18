@@ -39,7 +39,7 @@ for ax, rate in zip(axes, dilation_rates):
     ax.set_title(f"dilation={rate}")
     ax.axis("off")
 
-fig.suptitle("Atrous convolution: 같은 3x3 kernel로 더 넓은 위치를 샘플링")
+fig.suptitle("Atrous convolution: wider sampling with the same 3x3 kernel")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "02_atrous_receptive_field.png", dpi=150)
 plt.show()
