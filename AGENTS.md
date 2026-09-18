@@ -71,6 +71,17 @@
 - `09_ddpm`: DDPM, forward noising/reverse denoising/noise prediction
 - `10_diffusion_policy`: official Push-T demonstrations, action diffusion/receding horizon
 
+## 현재 표준 practice
+
+`03_deeplabv3plus`를 claim-verification형 practice의 기준 예시로 사용한다.
+
+이 폴더는 다음 세 층을 모두 포함해야 한다.
+- mechanism: atrous sampling / ASPP branch / feature flow
+- prediction: input / GT / probability / prediction / error / boundary error
+- evidence: 동일한 scaled 조건의 no-decoder baseline과 decoder 모델 비교
+
+다른 논문 폴더를 리팩터링할 때도 파일 개수를 기계적으로 맞추기보다 이 세 층과 README의 `Paper claim / Target configuration / What to observe / Outputs / Paper vs practice`를 우선 맞춘다.
+
 ## 논문 실습 완료 기준
 1. Problem
 2. Core idea
