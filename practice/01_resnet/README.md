@@ -42,8 +42,8 @@ ResNet-20은 `6n+2`, `n=3`이다. shortcut은 CIFAR 실험의 option A를 사용
 - `01_data.py`: raw image와 tensor 확인
 - `02_model.py`: shape flow와 `F(x) + x` 확인
 - `03_train.py`: paper SGD schedule
-- `04_analyze.py`: plain/residual test error와 prediction\n- `05_residual_mechanism.py`: `x`, `F(x)`, shortcut, `F(x)+x` feature map 시각화
-- `residual_block.py`: 이전 직접 타이핑 학습 이력 보존
+- `04_analyze.py`: plain/residual test error와 prediction
+- `05_residual_mechanism.py`: `x`, `F(x)`, shortcut, `F(x)+x` feature map 시각화
 
 코드는 소프트웨어 추상화보다 **논문 구조가 눈에 보이는 것**을 우선한다.
 
