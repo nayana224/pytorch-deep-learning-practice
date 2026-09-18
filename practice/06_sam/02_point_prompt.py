@@ -58,7 +58,7 @@ axes[2].set_title("SAM predicted mask")
 for ax in axes:
     ax.axis("off")
 
-fig.suptitle("SAM 핵심: 같은 image embedding에 prompt를 주어 원하는 mask를 조건부 생성")
+fig.suptitle("SAM: prompt-conditioned mask prediction from one image embedding")
 fig.tight_layout()
 fig.savefig(OUT / "02_point.png", dpi=150)
 plt.show()
