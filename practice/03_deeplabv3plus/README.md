@@ -11,16 +11,28 @@
 
 ## Target configuration
 
-기준 모델은 **output stride 16의 DeepLabv3+ decoder 구조**다.
+실습을 두 층으로 나눈다.
 
-논문의 최종 최고 성능은 modified Xception-65, 추가 학습 데이터, 더 긴 학습, multi-scale/flip inference 등의 조건을 포함한다. 이 저장소에서는 전체 최고 숫자 재현보다 논문 핵심 메커니즘을 직접 관찰하는 것을 우선한다.
+### A. 구조/메커니즘 확인용
 
-따라서 다음 두 모델을 같은 scaled backbone/ASPP 조건에서 학습한다.
+기준 모델은 **output stride 16의 scaled DeepLabv3+ decoder 구조**다.
 
 - `v3plus`: ASPP + low-level 48-channel projection + decoder
 - `v3`: ASPP 뒤에서 바로 분류하는 no-decoder baseline
 
 두 모델 비교는 논문의 전체 ablation을 그대로 재현한 것이 아니라 **decoder 효과를 확인하기 위한 controlled scaled comparison**이다.
+
+### B. 실제 prediction 품질 확인용
+
+강한 prediction을 보기 위해 공개 pretrained model인 **DeepLabV3Plus-ResNet101, VOC2012 Aug, OS=16**을 별도 분석한다.
+
+사용 출처:
+- VainF/DeepLabV3Plus-Pytorch
+- 공개 checkpoint reported mIoU: 0.783 on Pascal VOC2012 Aug validation setup
+
+이 모델은 DeepLabv3+ 논문의 공식 저자 checkpoint가 아니고, 논문의 최종 Xception-65 최고 설정과도 동일하지 않다. 대신 현재 PyTorch 환경에서 쉽게 재현 가능한 공개 pretrained DeepLabv3+ 중 강한 설정을 사용해 **"제대로 학습된 DeepLabv3+가 실제로 어떤 segmentation을 내는가"**를 관찰하는 용도다.
+
+논문의 최종 최고 성능 자체를 재현했다고 해석하지 않는다.
 
 ## Reproduction level
 
@@ -107,6 +119,7 @@ bash scripts/download_voc2012.sh
 - `04_train.py`: `v3plus` 또는 `v3` 학습, CE/mIoU, training curve 저장
 - `05_analyze.py`: ASPP branch / feature flow / prediction / boundary error 시각화
 - `06_evidence.py`: decoder 유무 controlled comparison
+- `07_pretrained_analyze.py`: 공개 pretrained DeepLabV3Plus-ResNet101의 실제 prediction / confidence / error / boundary error
 
 ## 실행
 
@@ -124,7 +137,7 @@ python practice/03_deeplabv3plus/04_train.py \
 python practice/03_deeplabv3plus/05_analyze.py
 ```
 
-decoder 효과까지 확인하려면 baseline도 같은 epoch로 학습한다.
+scaled decoder 효과까지 확인하려면 baseline도 같은 epoch로 학습한다.
 
 ```bash
 python practice/03_deeplabv3plus/04_train.py \
@@ -133,6 +146,13 @@ python practice/03_deeplabv3plus/04_train.py \
 
 python practice/03_deeplabv3plus/06_evidence.py \
   --max-samples 100
+```
+
+실제 잘 학습된 DeepLabv3+ prediction을 보려면 공개 pretrained 모델을 준비하고 분석한다.
+
+```bash
+bash scripts/setup_deeplabv3plus_pretrained.sh
+python practice/03_deeplabv3plus/07_pretrained_analyze.py
 ```
 
 ## Outputs
@@ -154,6 +174,8 @@ v3.pt
 
 06_decoder_evidence.json
 06_decoder_evidence.png
+
+07_pretrained_prediction_analysis.png
 ```
 
 이 이미지들이 논문 노트의 다음 항목에 직접 들어갈 실습 근거다.
@@ -184,6 +206,7 @@ v3.pt
 - 논문의 전체 training schedule 미재현
 - multi-scale + flip inference 미사용
 - decoder evidence는 논문 표 자체의 수치 재현이 아니라 로컬 controlled comparison
+- pretrained prediction track은 제3자 공개 PyTorch 재현 구현의 ResNet101 checkpoint이며, 논문 저자의 최종 Xception-65 checkpoint와 동일하지 않음
 
 따라서 이 실습으로 주장할 수 있는 것은 **논문 구조와 핵심 메커니즘을 이해하고, scaled 조건에서 그 효과를 직접 관찰했다**는 수준이다. 논문의 최종 benchmark 수치 재현으로 해석하면 안 된다.
 
