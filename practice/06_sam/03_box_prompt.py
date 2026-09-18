@@ -1,3 +1,9 @@
+"""SAM 논문 실습 코드.
+
+같은 image embedding에 point/box prompt를 주었을 때
+mask와 multimask ambiguity가 어떻게 달라지는지 확인하기 위한 코드다.
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
