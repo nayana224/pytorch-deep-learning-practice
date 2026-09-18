@@ -41,6 +41,8 @@
 - `forward()`는 논문의 data flow 순서대로 읽히게 한다.
 - helper 함수는 데이터 로딩, metric, 시각화처럼 모델 이해를 방해하지 않는 부분에만 쓴다.
 - 공식 pretrained model을 쓰는 DINOv2/SAM 계열은 내부를 억지로 재구현하지 않는다.
+- 외부 repo/checkpoint 다운로드는 practice 실행 중 하지 않고 `scripts/setup_*.sh` 단계에서 명시적으로 끝낸다.
+- 같은 pretrained model과 같은 input을 여러 prompt로 분석할 때는 model load / feature embedding을 한 번만 수행한다.
 - 주석은 가능한 한 한글로 작성한다.
 - 주석은 단순 코드 번역보다 **왜 필요한 연산인지 / 입력과 출력이 무엇인지 / 논문에서 무엇을 확인하는지**를 설명한다.
 
@@ -74,6 +76,8 @@
 - 전체 training, 긴 benchmark 평가, 대규모 checkpoint 생성은 core runner에 넣지 않는다.
 - Level 3 논문에서 dataset/checkpoint가 필요하면 README의 준비 명령을 먼저 실행한다.
 - core runner 실행 후 사용자는 `outputs/<paper>/`의 결정적 그림 1~3개만 보고 논문 핵심을 설명할 수 있어야 한다.
+- core runner는 `MPLBACKEND=Agg`를 사용해 GUI 창에서 멈추지 않고 결과 이미지만 저장한다.
+- 개별 실습 파일을 직접 실행할 때는 기존 `plt.show()` 동작을 유지해 필요하면 화면에서 즉시 볼 수 있게 한다.
 - 새 논문 폴더를 만들 때도 먼저 `00_run_core.py`와 핵심 visualization을 설계한 뒤, 필요할 때만 full training code를 추가한다.
 
 ## 시각화 원칙
