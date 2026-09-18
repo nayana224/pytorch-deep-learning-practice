@@ -50,7 +50,7 @@ for ax, matrix, title in zip(
     ax.set_ylabel("Query token")
     fig.colorbar(image, ax=ax, fraction=0.046)
 
-fig.suptitle("Decoder에서는 현재 위치 이후의 token을 볼 수 없다")
+fig.suptitle("Causal masking prevents attention to future tokens")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "03_masked_vs_unmasked.png", dpi=160)
 plt.show()
