@@ -72,7 +72,7 @@ for ax, matrix, title in zip(
     ax.set_ylabel("Query token")
     fig.colorbar(image, ax=ax, fraction=0.046)
 
-fig.suptitle("각 Query token이 다른 token을 얼마나 참고하는가")
+fig.suptitle("How strongly each query token attends to each key token")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "02_scaled_dot_product_attention.png", dpi=160)
 plt.show()
