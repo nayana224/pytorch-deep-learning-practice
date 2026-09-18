@@ -85,7 +85,7 @@ for column, (image, patch_features) in enumerate(
 
     offset += num_patches
 
-fig.suptitle("label 없이 학습한 patch feature가 semantic region을 구분하는가?")
+fig.suptitle("Do self-supervised patch features reveal semantic regions?")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "03_patch_pca.png", dpi=150)
 plt.show()
