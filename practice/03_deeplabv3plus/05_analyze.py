@@ -1,8 +1,10 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn.functional as F
+from matplotlib.colors import ListedColormap
 from torchvision.datasets import VOCSegmentation
 
 from data import DATA_DIR, pair_to_tensor
@@ -11,6 +13,36 @@ from deeplabv3plus import DeepLabV3Plus
 
 OUTPUT_DIR = Path("outputs/03_deeplabv3plus")
 CHECKPOINT = OUTPUT_DIR / "v3plus.pt"
+
+
+def voc_colormap():
+    cmap = np.zeros((21, 3), dtype=np.float32)
+
+    for class_index in range(21):
+        red = 0
+        green = 0
+        blue = 0
+        value = class_index
+
+        for bit in range(8):
+            red |= ((value >> 0) & 1) << (7 - bit)
+            green |= ((value >> 1) & 1) << (7 - bit)
+            blue |= ((value >> 2) & 1) << (7 - bit)
+            value >>= 3
+
+        cmap[class_index] = np.array([red, green, blue]) / 255.0
+
+    return ListedColormap(cmap)
+
+
+def prepare_segmentation_for_display(mask):
+    mask = mask.detach().cpu().clone()
+    ignore = mask == 255
+
+    visible = mask.clone()
+    visible[ignore] = 0
+
+    return visible, ignore
 
 
 def normalize_map(feature):
@@ -81,6 +113,10 @@ error = (prediction != target) & (target != 255)
 boundary = semantic_boundary(target)
 boundary_error = error & boundary
 
+gt_vis, gt_ignore = prepare_segmentation_for_display(target)
+pred_vis, _ = prepare_segmentation_for_display(prediction)
+segmentation_cmap = voc_colormap()
+
 print("low-level feature :", features["low"].shape)
 print("high-level feature:", features["high"].shape)
 print("ASPP feature      :", features["aspp"].shape)
@@ -98,10 +134,27 @@ fig, axes = plt.subplots(2, 3, figsize=(14, 9))
 axes[0, 0].imshow(image)
 axes[0, 0].set_title("Input")
 
-axes[0, 1].imshow(target, cmap="tab20")
-axes[0, 1].set_title("GT")
+axes[0, 1].imshow(
+    gt_vis,
+    cmap=segmentation_cmap,
+    vmin=0,
+    vmax=20,
+)
+axes[0, 1].imshow(
+    gt_ignore,
+    cmap="gray",
+    vmin=0,
+    vmax=1,
+    alpha=0.55,
+)
+axes[0, 1].set_title("GT (gray = ignore 255)")
 
-axes[0, 2].imshow(prediction, cmap="tab20")
+axes[0, 2].imshow(
+    pred_vis,
+    cmap=segmentation_cmap,
+    vmin=0,
+    vmax=20,
+)
 axes[0, 2].set_title("Prediction")
 
 axes[1, 0].imshow(confidence, cmap="viridis", vmin=0, vmax=1)
