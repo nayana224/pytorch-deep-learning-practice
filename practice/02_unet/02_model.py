@@ -84,16 +84,16 @@ def main() -> None:
         axes2,
         [crop4, up4, concat4],
         [
-            "crop한 encoder feature",
-            "up-convolution한 decoder feature",
-            "channel concat 결과",
+            "cropped encoder feature",
+            "up-convolved decoder feature",
+            "after channel concat",
         ],
     ):
         ax.imshow(normalize_map(feature), cmap="magma")
         ax.set_title(title)
         ax.axis("off")
 
-    fig2.suptitle("U-Net 핵심: 고해상도 encoder feature를 decoder에 직접 전달")
+    fig2.suptitle("U-Net skip connection: high-resolution encoder feature to decoder")
     fig2.tight_layout()
     fig2.savefig(OUTPUT_DIR / "02_model_crop_concat.png", dpi=160)
 
