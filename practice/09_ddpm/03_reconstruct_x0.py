@@ -67,7 +67,7 @@ axes[2].set_title("x0 from true epsilon")
 for ax in axes:
     ax.axis("off")
 
-fig.suptitle("noise를 맞게 예측하면 noisy sample에서 clean signal을 추정할 수 있다")
+fig.suptitle("Correct noise prediction lets us estimate the clean signal")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "03_reconstruct_x0.png", dpi=160)
 plt.show()
