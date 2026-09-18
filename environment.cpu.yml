@@ -8,6 +8,10 @@ dependencies:
   - pip
   - numpy
   - matplotlib
+  - pillow
+  - scikit-learn
+  - tqdm
+  - tifffile
   - pip:
       - --index-url https://download.pytorch.org/whl/cpu
       - torch==2.12.1
