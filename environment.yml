@@ -8,6 +8,10 @@ dependencies:
   - pip
   - numpy
   - matplotlib
+  - pillow
+  - scikit-learn
+  - tqdm
+  - tifffile
   - pip:
       - torch==2.12.1
       - torchvision==0.27.1
