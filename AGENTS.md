@@ -32,6 +32,28 @@
 - helper 함수는 데이터 로딩, metric, 시각화처럼 모델 이해를 방해하지 않는 부분에만 쓴다.
 - 공식 pretrained 모델을 쓰는 DINOv2/SAM 계열은 내부를 억지로 재구현하지 않고, `input → official model → feature/mask → analysis` 흐름을 명확히 보여준다.
 
+## 논문 학습 깊이 원칙
+
+모든 논문을 같은 깊이로 구현하지 않는다.
+
+- **Level 1 — Paper understanding**: 모든 논문. Problem / Core idea / Method / Input-GT-Output-Loss / Evidence를 설명할 수 있으면 된다.
+- **Level 2 — Core mechanism check**: 핵심 연산 하나를 작은 tensor/example로 직접 확인한다. 전체 task training을 재현할 필요는 없다.
+- **Level 3 — Model behavior analysis**: 연구와 직접 연결되는 논문만 실제 pretrained/faithful model을 돌려 feature, prediction, failure case를 본다.
+
+첫 바퀴에서는 폭을 우선한다. 논문마다 시각화를 많이 만드는 대신 **핵심 주장 하나를 확인하는 결정적 visualization 1~3개**를 남긴다.
+
+권장 깊이:
+- ResNet: Level 2
+- U-Net: Level 2~3
+- DeepLabv3+: Level 2~3
+- Attention Is All You Need: Level 2
+- ViT: Level 3
+- SAM: Level 3
+- DINOv2: Level 3
+- ACT: Level 3
+- DDPM: Level 2
+- Diffusion Policy: Level 3
+
 ## 시각화 우선 원칙
 각 논문 실습의 목적은 단순히 학습 코드를 실행하는 것이 아니라 **논문의 핵심 주장이 실제로 관찰되는지 확인하는 것**이다.
 
@@ -50,6 +72,8 @@
 3. **Evidence visualization** — 논문의 핵심 주장과 직접 연결되는 비교, metric curve, ablation-like comparison, failure case
 
 숫자 하나만 출력하고 끝내지 않는다. 결과 이미지는 `outputs/<paper>/`에 저장하여 나중에 논문 노트의 My observation 근거로 다시 볼 수 있게 한다.
+
+`data/<paper>/`는 raw/official dataset과 필요한 sample input만 보관한다. 생성된 plot, feature map, prediction image를 `data/`에 섞지 않는다. 실습 결과는 모두 `outputs/<paper>/`에 모아 바로 확인한다.
 
 ## 모델 선택 원칙
 - "논문에서 가장 좋은 모델"을 무조건 그대로 재학습하지 않는다.
