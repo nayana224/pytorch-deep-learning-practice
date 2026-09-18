@@ -71,18 +71,24 @@ external/   official 외부 repository
 
 ## 빠른 핵심 실습
 
-전체 모델을 학습하지 않고 핵심 메커니즘만 바로 보고 싶을 때:
+모든 논문 폴더에서 동일한 명령 형태를 사용한다.
 
 ```bash
-# Transformer attention 핵심
-python practice/04_attention_is_all_you_need/07_run_all.py
-
-# ACT 첫 바퀴 핵심
-python practice/08_act/04_run_all.py
-
-# DDPM 핵심
-python scripts/download_torchvision_data.py ddpm
-python practice/09_ddpm/04_run_all.py
+python practice/<paper>/00_run_core.py
 ```
 
-상세 순서는 `docs/02_STUDY_ORDER.md`를 사용한다.
+예:
+
+```bash
+# ResNet residual addition
+python practice/01_resnet/00_run_core.py
+
+# Transformer attention
+python practice/04_attention_is_all_you_need/00_run_core.py
+
+# DDPM core mechanism
+python scripts/download_torchvision_data.py ddpm
+python practice/09_ddpm/00_run_core.py
+```
+
+상세 순서는 `docs/02_STUDY_ORDER.md`, 논문별 핵심 그림은 `docs/04_CORE_VISUALIZATION_MAP.md`를 사용한다.
