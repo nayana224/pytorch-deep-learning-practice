@@ -59,6 +59,15 @@
 - DDPM: Level 2
 - Diffusion Policy: Level 3
 
+## 공통 core runner 원칙
+
+- 모든 `practice/<paper>/` 폴더는 `00_run_core.py`를 제공한다.
+- `00_run_core.py`는 첫 바퀴 핵심 메커니즘만 순서대로 실행한다.
+- 전체 training, 긴 benchmark 평가, 대규모 checkpoint 생성은 core runner에 넣지 않는다.
+- Level 3 논문에서 dataset/checkpoint가 필요하면 README의 준비 명령을 먼저 실행한다.
+- core runner 실행 후 사용자는 `outputs/<paper>/`의 결정적 그림 1~3개만 보고 논문 핵심을 설명할 수 있어야 한다.
+- 새 논문 폴더를 만들 때도 먼저 `00_run_core.py`와 핵심 visualization을 설계한 뒤, 필요할 때만 full training code를 추가한다.
+
 ## 시각화 원칙
 
 Level 2:
