@@ -55,6 +55,7 @@ data/05_vit/
 ## 06 SAM
 
 ```bash
+bash scripts/setup_sam.sh
 bash scripts/download_sam_vit_b.sh
 ```
 
@@ -67,14 +68,17 @@ data/06_sam/sa1b/
 ## 07 DINOv2
 
 ```bash
+bash scripts/setup_dinov2.sh
 python scripts/download_torchvision_data.py pets
 ```
 
 ```text
+external/dinov2/
 data/07_dinov2/
 ```
 
-DINOv2 weight는 official torch.hub model을 처음 실행할 때 cache된다.
+official repo와 pretrained weight는 setup 단계에서 준비한다.
+practice 실행 중에는 GitHub repo를 자동으로 받지 않는다.
 
 ## 08 ACT
 
