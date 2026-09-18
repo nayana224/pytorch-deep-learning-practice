@@ -1,0 +1,80 @@
+"""DINOv2 실습 파일.
+
+공식 pretrained feature를 사용해 논문의 표현 학습 특성을 관찰한다.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import torch
+from torchvision.datasets import OxfordIIITPet
+
+from common import extract_features, image_transform, load_model
+
+
+OUTPUT_DIR = Path("outputs/07_dinov2")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+model, device = load_model()
+transform = image_transform()
+
+try:
+    dataset = OxfordIIITPet(
+        "data/07_dinov2",
+        split="test",
+        download=False,
+    )
+except RuntimeError as error:
+    raise FileNotFoundError(
+        "Oxford-IIIT Pets is not prepared. Run: "
+        "python scripts/download_torchvision_data.py pets"
+    ) from error
+
+images = []
+patch_feature_sets = []
+
+for index in [0, 1, 2]:
+    image, _ = dataset[index]
+    images.append(image)
+
+    x = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        _, patch_tokens = extract_features(model, x)
+
+    patch_feature_sets.append(patch_tokens[0].cpu())
+
+all_patch_features = torch.cat(patch_feature_sets, dim=0)
+mean_feature = all_patch_features.mean(dim=0, keepdim=True)
+centered = all_patch_features - mean_feature
+
+_, _, principal_directions = torch.pca_lowrank(centered, q=3)
+pca_rgb = centered @ principal_directions
+
+minimum = pca_rgb.amin(dim=0)
+maximum = pca_rgb.amax(dim=0)
+pca_rgb = (pca_rgb - minimum) / (maximum - minimum + 1e-6)
+
+fig, axes = plt.subplots(2, 3, figsize=(10, 7))
+offset = 0
+
+for column, (image, patch_features) in enumerate(zip(images, patch_feature_sets)):
+    num_patches = patch_features.shape[0]
+    side = int(num_patches ** 0.5)
+
+    axes[0, column].imshow(image)
+    axes[0, column].set_title("input")
+
+    patch_rgb = pca_rgb[offset : offset + num_patches]
+    patch_rgb = patch_rgb.reshape(side, side, 3)
+    axes[1, column].imshow(patch_rgb)
+    axes[1, column].set_title("patch-feature PCA")
+
+    axes[0, column].axis("off")
+    axes[1, column].axis("off")
+
+    offset += num_patches
+
+plt.tight_layout()
+plt.savefig(OUTPUT_DIR / "03_patch_pca.png", dpi=150)
+plt.show()
