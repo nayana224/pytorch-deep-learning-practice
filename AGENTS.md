@@ -79,6 +79,7 @@
 - mechanism: atrous sampling / ASPP branch / feature flow
 - prediction: input / GT / probability / prediction / error / boundary error
 - evidence: 동일한 scaled 조건의 no-decoder baseline과 decoder 모델 비교
+- pretrained reality check: scratch 축소 모델의 낮은 성능을 논문 모델 성능으로 오해하지 않도록, 공개된 강한 pretrained model의 prediction/failure case를 별도 확인
 
 다른 논문 폴더를 리팩터링할 때도 파일 개수를 기계적으로 맞추기보다 이 세 층과 README의 `Paper claim / Target configuration / What to observe / Outputs / Paper vs practice`를 우선 맞춘다.
 
