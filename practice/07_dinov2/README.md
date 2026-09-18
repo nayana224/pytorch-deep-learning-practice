@@ -8,6 +8,18 @@
 
 분석 dataset은 논문 Table 8의 frozen-feature transfer benchmark 중 하나인 **Oxford-IIIT Pets**다. 논문은 DINOv2 frozen features를 linear evaluation, retrieval, segmentation/depth 및 PCA patch visualization으로 평가한다.
 
+
+## 공통 첫 바퀴 실행
+
+이 폴더의 핵심 실습만 연속 실행하려면:
+
+```bash
+python practice/07_dinov2/00_run_core.py
+```
+
+전체 training을 자동으로 수행하는 명령이 아니라, 첫 바퀴에서 봐야 할 핵심 메커니즘만 실행한다.
+생성된 그림은 `outputs/07_dinov2/`에서 확인한다.
+
 ## 데이터 준비
 
 ```bash
