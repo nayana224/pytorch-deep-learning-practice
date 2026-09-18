@@ -7,7 +7,7 @@
 ```bash
 python scripts/download_torchvision_data.py cifar10
 python practice/01_resnet/02_model.py
-python practice/01_resnet/04_analyze.py
+python practice/01_resnet/05_residual_mechanism.py
 ```
 
 핵심 질문:
@@ -22,7 +22,7 @@ plain network와 residual network는 무엇이 다른가?
 ```bash
 bash scripts/download_isbi2012.sh
 python practice/02_unet/02_model.py
-python practice/02_unet/04_analyze.py
+python practice/02_unet/02_model.py
 ```
 
 핵심 질문:
