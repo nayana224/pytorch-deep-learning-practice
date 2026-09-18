@@ -55,13 +55,13 @@ for dimension in range(min(4, d_model)):
         label=f"dim {dimension}",
     )
 
-axes[1].set_title("위치에 따른 encoding 값 변화")
+axes[1].set_title("Encoding values across token positions")
 axes[1].set_xlabel("token position")
 axes[1].set_ylabel("encoding value")
 axes[1].legend()
 axes[1].grid(True)
 
-fig.suptitle("Attention에는 순서가 없으므로 위치 정보를 embedding에 더한다")
+fig.suptitle("Positional encoding injects token-order information")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "05_positional_encoding.png", dpi=160)
 plt.show()
