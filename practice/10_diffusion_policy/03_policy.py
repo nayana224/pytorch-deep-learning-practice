@@ -1,6 +1,7 @@
-"""Diffusion Policy 실습 파일.
+"""Diffusion Policy의 학습 loss가 observation-conditioned noise prediction임을 확인한다.
 
-행동 시퀀스의 조건부 diffusion과 receding-horizon 실행을 관찰하기 위한 코드다.
+실제 Push-T image / agent position / action chunk를 한 batch 가져와
+공식 policy의 compute_loss를 한 번 호출한다.
 """
 
 from torch.utils.data import DataLoader
@@ -8,16 +9,20 @@ from torch.utils.data import DataLoader
 from common import make_dataset, make_policy
 
 
-# 1. Official Push-T demonstrations
+# 1) 공식 Push-T demonstration dataset
 train_dataset = make_dataset()
 normalizer = train_dataset.get_normalizer()
 
-# 2. Official image-conditioned diffusion policy
+# 2) image-conditioned diffusion policy
 policy, device = make_policy()
 policy.set_normalizer(normalizer)
 
-# 3. One demonstration batch
-loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+# 3) demonstration batch 하나만 꺼내 data flow를 확인한다.
+loader = DataLoader(
+    train_dataset,
+    batch_size=2,
+    shuffle=True,
+)
 batch = next(iter(loader))
 
 images = batch["obs"]["image"].to(device)
@@ -32,14 +37,20 @@ batch_on_device = {
     "action": actions,
 }
 
-# 4. observation + noisy action + timestep -> predicted noise
-#    target = sampled Gaussian noise, loss = MSE
+# 4) observation을 condition으로 주고 noisy action에서 epsilon을 예측한다.
+#    GT는 sampling한 Gaussian noise이고 loss는 MSE다.
 policy.train()
 loss = policy.compute_loss(batch_on_device)
 
-print("image observations :", images.shape)
-print("agent positions    :", agent_positions.shape)
-print("action sequence    :", actions.shape)
+print("image observations :", tuple(images.shape))
+print("agent positions    :", tuple(agent_positions.shape))
+print("action sequence    :", tuple(actions.shape))
 print("epsilon MSE loss   :", float(loss))
-print("diffusion params   :", sum(p.numel() for p in policy.model.parameters()))
-print("vision params      :", sum(p.numel() for p in policy.obs_encoder.parameters()))
+print(
+    "diffusion params   :",
+    sum(p.numel() for p in policy.model.parameters()),
+)
+print(
+    "vision params      :",
+    sum(p.numel() for p in policy.obs_encoder.parameters()),
+)
